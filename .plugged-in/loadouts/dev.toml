@@ -1,0 +1,8 @@
+# Example project Loadout for working on plugged-in itself.
+baseline = "none"
+allow = [
+  "tdd@skills-dir",
+  "code-review@skills-dir",
+  "codebase-design@skills-dir",
+  "domain-modeling@skills-dir",
+]

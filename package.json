@@ -1,0 +1,31 @@
+{
+  "name": "plugged-in",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Decides which plugins, skills, and MCP servers are active in a coding-agent session, portable across agent clients.",
+  "type": "module",
+  "bin": {
+    "plugged-in": "./dist/cli.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsx src/cli.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json",
+    "lint": "npm run typecheck"
+  },
+  "dependencies": {
+    "enquirer": "^2.4.1",
+    "smol-toml": "^1.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3",
+    "vitest": "^4.1.10"
+  }
+}
