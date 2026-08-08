@@ -1,7 +1,11 @@
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { buildInventory } from "../inventory/index.js";
 import { loadLoadouts } from "../loadout/store.js";
 import { resolveLoadout } from "../loadout/resolve.js";
 import { isValidLoadoutName, writeNewLoadoutFile } from "../loadout/write.js";
+import { projectClaudeCode } from "../projection/claude-code.js";
+import { projectCodex } from "../projection/codex.js";
 import type { Prompter } from "../tui/prompter.js";
 import type { Baseline, Inventory, Loadout } from "../domain/types.js";
 
@@ -26,7 +30,7 @@ export async function pickOrCreateLoadout(cwd: string, prompter: Prompter, claud
   const existingNames = [...loadouts.keys()].sort();
 
   const choice = await prompter.select("No --loadout given. Pick one:", [
-    ...existingNames.map((n) => ({ value: n, label: `${n} (${loadouts.get(n)!.scope})` })),
+    ...existingNames.map((n) => ({ value: n, label: describeExistingLoadout(loadouts.get(n)!, inventory, loadouts) })),
     { value: ALL_OPTION, label: "all — everything on (native default)" },
     { value: NONE_OPTION, label: "none — everything off" },
     { value: CREATE_OPTION, label: "Create a new Loadout..." },
@@ -37,6 +41,28 @@ export async function pickOrCreateLoadout(cwd: string, prompter: Prompter, claud
   if (choice !== CREATE_OPTION) return { loadoutName: choice, created: false };
 
   return createLoadoutInteractively(cwd, prompter, inventory, loadouts, existingNames);
+}
+
+/**
+ * `${name} (${scope})`, plus a refusal count so a Loadout that would fail to launch is
+ * visible in the menu itself instead of only after committing to it (`run` would otherwise
+ * show the same refusal wall, but only once you've already picked). A Loadout whose own
+ * config is broken (unknown baseline, allow/deny contradiction) is flagged rather than
+ * thrown from here — a bad *other* Loadout shouldn't crash the picker for everything else.
+ */
+function describeExistingLoadout(loadout: Loadout, inventory: Inventory, loadoutsByName: ReadonlyMap<string, Loadout>): string {
+  const base = `${loadout.name} (${loadout.scope})`;
+  try {
+    const resolution = resolveLoadout(loadout, inventory, loadoutsByName);
+    const previewWorkDir = join(tmpdir(), "plugged-in", "preview", "claude-code");
+    const refusalCount =
+      projectClaudeCode({ client: "claude-code", inventory, loadout: resolution }, previewWorkDir).refusals.length +
+      projectCodex({ client: "codex", inventory, loadout: resolution }).refusals.length;
+    if (refusalCount === 0) return base;
+    return `${base} — ⚠ ${refusalCount} refusal${refusalCount === 1 ? "" : "s"}, see \`explain\``;
+  } catch (err) {
+    return `${base} — ⚠ invalid config: ${(err as Error).message}`;
+  }
 }
 
 async function promptForNewName(prompter: Prompter, existingNames: readonly string[]): Promise<string> {

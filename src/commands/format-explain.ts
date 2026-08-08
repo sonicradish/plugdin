@@ -26,8 +26,9 @@ function formatClientSection(result: ExplainResult, client: ClientId, label: str
       for (const c of items) {
         const on = statusOf(result, c.id.key) === "on";
         const status = p.bold(on ? p.green("on ") : p.gray("off"));
+        const why = p.dim(result.explicitKeys.has(c.id.key) ? " (explicit)" : " (baseline default)");
         const note = c.id.kind === "skill" ? p.dim(` (${c.annotation})`) : "";
-        lines.push(`    [${status}] ${c.id.key}${note}`);
+        lines.push(`    [${status}] ${c.id.key}${why}${note}`);
       }
     }
   }

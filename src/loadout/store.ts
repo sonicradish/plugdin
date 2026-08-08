@@ -3,9 +3,10 @@ import { readdir, readFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join, basename } from "node:path";
 import { parse as parseToml } from "smol-toml";
+import { LoadoutConfigError } from "../domain/errors.js";
 import type { Baseline, Loadout } from "../domain/types.js";
 
-export class InvalidLoadoutFileError extends Error {
+export class InvalidLoadoutFileError extends LoadoutConfigError {
   constructor(path: string, detail: string) {
     super(`Invalid Loadout file ${path}: ${detail}`);
   }

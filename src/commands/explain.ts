@@ -1,13 +1,14 @@
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { LoadoutConfigError } from "../domain/errors.js";
 import { buildInventory, type DiscoveryWarning } from "../inventory/index.js";
 import { findLoadout, loadLoadouts, resolveDefaultLoadoutName } from "../loadout/store.js";
-import { resolveLoadout } from "../loadout/resolve.js";
+import { explicitlySetKeys, resolveLoadout } from "../loadout/resolve.js";
 import { projectClaudeCode } from "../projection/claude-code.js";
 import { projectCodex } from "../projection/codex.js";
 import type { Activation, Inventory, Projection, Resolution } from "../domain/types.js";
 
-export class UnknownLoadoutError extends Error {
+export class UnknownLoadoutError extends LoadoutConfigError {
   constructor(name: string) {
     super(`No Loadout named "${name}" (checked global and project .plugged-in/loadouts/, and the "all"/"none" built-ins)`);
   }
@@ -18,6 +19,9 @@ export interface ExplainResult {
   readonly warnings: readonly DiscoveryWarning[];
   readonly inventory: Inventory;
   readonly resolution: Resolution;
+  /** Component keys this Loadout (or a Loadout it inherits from) explicitly allow/deny'd —
+   * everything else is just the chain's terminal all/none baseline showing through. */
+  readonly explicitKeys: ReadonlySet<string>;
   readonly projections: {
     readonly "claude-code": Projection;
     readonly codex: Projection;
@@ -51,6 +55,7 @@ export async function explain(cwd: string, loadoutNameArg?: string, claudeHome?:
     warnings,
     inventory,
     resolution,
+    explicitKeys: explicitlySetKeys(loadout, loadouts),
     projections: {
       "claude-code": projectClaudeCode(claudeCodeActivation, previewWorkDir),
       codex: projectCodex(codexActivation),

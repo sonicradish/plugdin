@@ -60,6 +60,20 @@ describe("explain", () => {
     expect(codexProjection.args).toEqual(["-c", 'skills.config=[{name="tdd",enabled=false}]']);
   });
 
+  it("reports explicit allow/deny keys but not Components left at the baseline default", async () => {
+    await mkdir(join(claudeHome, "skills", "tdd"), { recursive: true });
+    await writeFile(join(claudeHome, "skills", "tdd", "SKILL.md"), `---\nname: tdd\ndescription: d\n---\n`);
+    await mkdir(join(claudeHome, "skills", "grilling"), { recursive: true });
+    await writeFile(join(claudeHome, "skills", "grilling", "SKILL.md"), `---\nname: grilling\ndescription: d\n---\n`);
+
+    await mkdir(projectLoadoutsDir(cwd), { recursive: true });
+    await writeFile(join(projectLoadoutsDir(cwd), "minimal.toml"), `baseline = "all"\ndeny = ["tdd@skills-dir"]\n`);
+
+    const result = await explain(cwd, "minimal", claudeHome);
+    expect(result.explicitKeys.has("tdd@skills-dir")).toBe(true);
+    expect(result.explicitKeys.has("grilling@skills-dir")).toBe(false);
+  });
+
   it("performs no filesystem writes — generated file contents are only ever returned in memory", async () => {
     const before = await import("node:fs/promises").then((fs) => fs.readdir(tmpdir()).catch(() => []));
     await explain(cwd, undefined, claudeHome);
@@ -86,6 +100,29 @@ describe("formatExplain", () => {
       const text = formatExplain(result);
       expect(text).toContain("REFUSED");
       expect(text).toContain("plugged-in run would refuse to launch");
+    } finally {
+      await rm(cwd, { recursive: true, force: true });
+      await rm(claudeHome, { recursive: true, force: true });
+    }
+  });
+
+  it("labels each Component 'explicit' or 'baseline default' to match how it ended up on/off", async () => {
+    const cwd = await mkdtemp(join(tmpdir(), "plugged-in-cwd-"));
+    const claudeHome = await mkdtemp(join(tmpdir(), "plugged-in-claude-home-"));
+    try {
+      await mkdir(join(claudeHome, "skills", "tdd"), { recursive: true });
+      await writeFile(join(claudeHome, "skills", "tdd", "SKILL.md"), `---\nname: tdd\ndescription: d\n---\n`);
+      await mkdir(join(claudeHome, "skills", "grilling"), { recursive: true });
+      await writeFile(join(claudeHome, "skills", "grilling", "SKILL.md"), `---\nname: grilling\ndescription: d\n---\n`);
+      runClientCommand.mockImplementation(async () => ({ available: true, stdout: "[]", stderr: "" }));
+
+      await mkdir(projectLoadoutsDir(cwd), { recursive: true });
+      await writeFile(join(projectLoadoutsDir(cwd), "minimal.toml"), `baseline = "all"\ndeny = ["tdd@skills-dir"]\n`);
+
+      const result = await explain(cwd, "minimal", claudeHome);
+      const text = formatExplain(result);
+      expect(text).toContain("tdd@skills-dir (explicit)");
+      expect(text).toContain("grilling@skills-dir (baseline default)");
     } finally {
       await rm(cwd, { recursive: true, force: true });
       await rm(claudeHome, { recursive: true, force: true });

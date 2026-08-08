@@ -1,18 +1,19 @@
+import { LoadoutConfigError } from "../domain/errors.js";
 import type { Component, Inventory, Loadout, Resolution } from "../domain/types.js";
 
-export class UnknownBaselineLoadoutError extends Error {
+export class UnknownBaselineLoadoutError extends LoadoutConfigError {
   constructor(name: string) {
     super(`Loadout baseline references unknown Loadout "${name}"`);
   }
 }
 
-export class BaselineCycleError extends Error {
+export class BaselineCycleError extends LoadoutConfigError {
   constructor(chain: readonly string[]) {
     super(`Loadout baseline cycle: ${chain.join(" -> ")}`);
   }
 }
 
-export class AmbiguousAllowDenyError extends Error {
+export class AmbiguousAllowDenyError extends LoadoutConfigError {
   constructor(loadoutName: string, keys: readonly string[]) {
     super(`Loadout "${loadoutName}" lists the same Component in both allow and deny: ${keys.join(", ")}`);
   }
@@ -70,4 +71,25 @@ function resolveBaseline(
 /** Components a Resolution turns on, in Inventory order. */
 export function activeComponents(resolution: Resolution, inventory: Inventory): Component[] {
   return inventory.components.filter((c) => resolution.decisions.get(c.id.key) === true);
+}
+
+/**
+ * Component keys touched by an explicit `allow`/`deny` anywhere in a Loadout's baseline
+ * chain (the Loadout itself or any Loadout it inherits from) — the keys whose final state
+ * is a deliberate choice, as opposed to just falling through to the chain's terminal
+ * `all`/`none` baseline untouched. Purely for display (`explain`); resolution itself doesn't
+ * need this distinction. Walks the same chain `resolveBaseline` does, so a cycle here would
+ * already have been caught by `resolveLoadout` before this is ever called.
+ */
+export function explicitlySetKeys(loadout: Loadout, loadoutsByName: ReadonlyMap<string, Loadout>): ReadonlySet<string> {
+  const keys = new Set<string>();
+  const visited = new Set<string>();
+  let current: Loadout | undefined = loadout;
+  while (current && !visited.has(current.name)) {
+    visited.add(current.name);
+    for (const key of current.allow) keys.add(key);
+    for (const key of current.deny) keys.add(key);
+    current = current.baseline.kind === "loadout" ? loadoutsByName.get(current.baseline.name) : undefined;
+  }
+  return keys;
 }

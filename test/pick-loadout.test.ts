@@ -128,6 +128,38 @@ describe("pickOrCreateLoadout", () => {
     expect(prompter.notes.some((n) => n.includes("already exists"))).toBe(true);
   });
 
+  it("flags an existing Loadout in the menu when it would produce a refusal", async () => {
+    await makeSkill("tdd"); // unannotated — turning it off is a refusal (ADR-0001)
+    await mkdir(projectLoadoutsDir(cwd), { recursive: true });
+    await writeFile(join(projectLoadoutsDir(cwd), "off.toml"), `baseline = "none"\n`);
+
+    const prompter = new FakePrompter().queueSelect("__plugged_in_none__");
+    await pickOrCreateLoadout(cwd, prompter, claudeHome);
+    const option = prompter.selectPrompts[0]?.options.find((o) => o.value === "off");
+    expect(option?.label).toContain("⚠ 1 refusal");
+  });
+
+  it("does not flag an existing Loadout in the menu when it resolves cleanly", async () => {
+    await mkdir(projectLoadoutsDir(cwd), { recursive: true });
+    await writeFile(join(projectLoadoutsDir(cwd), "clean.toml"), `baseline = "none"\n`);
+
+    const prompter = new FakePrompter().queueSelect("__plugged_in_none__");
+    await pickOrCreateLoadout(cwd, prompter, claudeHome);
+    const option = prompter.selectPrompts[0]?.options.find((o) => o.value === "clean");
+    expect(option?.label).toBe("clean (project)");
+  });
+
+  it("flags an existing Loadout with an invalid config (e.g. a dangling baseline reference) instead of crashing the picker", async () => {
+    await mkdir(projectLoadoutsDir(cwd), { recursive: true });
+    await writeFile(join(projectLoadoutsDir(cwd), "broken.toml"), `baseline = "does-not-exist"\n`);
+
+    const prompter = new FakePrompter().queueSelect("__plugged_in_none__");
+    const result = await pickOrCreateLoadout(cwd, prompter, claudeHome);
+    expect(result).toEqual({ loadoutName: "none", created: false }); // picking a different option still works
+    const option = prompter.selectPrompts[0]?.options.find((o) => o.value === "broken");
+    expect(option?.label).toContain("⚠ invalid config");
+  });
+
   it("offers existing Loadouts as baseline choices when creating a new one", async () => {
     await mkdir(projectLoadoutsDir(cwd), { recursive: true });
     await writeFile(join(projectLoadoutsDir(cwd), "team-default.toml"), `baseline = "none"\nallow = ["tdd@skills-dir"]\n`);

@@ -2,6 +2,7 @@ import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { LoadoutConfigError } from "../src/domain/errors.js";
 import {
   InvalidLoadoutFileError,
   findLoadout,
@@ -11,6 +12,12 @@ import {
   readProjectDefaultLoadout,
   resolveDefaultLoadoutName,
 } from "../src/loadout/store.js";
+
+describe("InvalidLoadoutFileError", () => {
+  it("is a LoadoutConfigError, so the CLI's generic catch handles it", () => {
+    expect(new InvalidLoadoutFileError("x.toml", "detail")).toBeInstanceOf(LoadoutConfigError);
+  });
+});
 
 describe("loadLoadouts", () => {
   let pluggedInHome: string;

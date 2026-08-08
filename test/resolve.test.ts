@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { AmbiguousAllowDenyError, BaselineCycleError, UnknownBaselineLoadoutError, activeComponents, resolveLoadout } from "../src/loadout/resolve.js";
+import { LoadoutConfigError } from "../src/domain/errors.js";
+import {
+  AmbiguousAllowDenyError,
+  BaselineCycleError,
+  UnknownBaselineLoadoutError,
+  activeComponents,
+  explicitlySetKeys,
+  resolveLoadout,
+} from "../src/loadout/resolve.js";
 import type { Component, Inventory, Loadout } from "../src/domain/types.js";
 
 function component(key: string): Component {
@@ -87,5 +95,40 @@ describe("resolveLoadout", () => {
   it("throws AmbiguousAllowDenyError when the same key is both allowed and denied", () => {
     const bad = loadout({ name: "contradictory", allow: ["a"], deny: ["a"] });
     expect(() => resolveLoadout(bad, inventory, new Map())).toThrow(AmbiguousAllowDenyError);
+  });
+
+  it("every resolution error is a LoadoutConfigError, so the CLI's generic catch handles all of them", () => {
+    expect(new UnknownBaselineLoadoutError("x")).toBeInstanceOf(LoadoutConfigError);
+    expect(new BaselineCycleError(["a", "b"])).toBeInstanceOf(LoadoutConfigError);
+    expect(new AmbiguousAllowDenyError("x", ["a"])).toBeInstanceOf(LoadoutConfigError);
+  });
+});
+
+describe("explicitlySetKeys", () => {
+  it("returns the Loadout's own allow/deny keys", () => {
+    const l = loadout({ name: "x", baseline: { kind: "none" }, allow: ["a"], deny: ["b"] });
+    expect(explicitlySetKeys(l, new Map())).toEqual(new Set(["a", "b"]));
+  });
+
+  it("does not include keys never mentioned by any allow/deny", () => {
+    const l = loadout({ name: "x", baseline: { kind: "all" }, deny: ["b"] });
+    expect(explicitlySetKeys(l, new Map()).has("c")).toBe(false);
+  });
+
+  it("walks the baseline chain, including an inherited Loadout's own allow/deny", () => {
+    const parent = loadout({ name: "team-default", baseline: { kind: "none" }, allow: ["a", "b"] });
+    const child = loadout({ name: "mine", baseline: { kind: "loadout", name: "team-default" }, deny: ["b"], allow: ["c"] });
+    const byName = new Map([["team-default", parent]]);
+    expect(explicitlySetKeys(child, byName)).toEqual(new Set(["a", "b", "c"]));
+  });
+
+  it("does not infinite-loop on a baseline cycle (resolveLoadout already rejects these before this runs)", () => {
+    const a = loadout({ name: "a-loadout", baseline: { kind: "loadout", name: "b-loadout" }, allow: ["a"] });
+    const b = loadout({ name: "b-loadout", baseline: { kind: "loadout", name: "a-loadout" }, allow: ["b"] });
+    const byName = new Map([
+      ["a-loadout", a],
+      ["b-loadout", b],
+    ]);
+    expect(explicitlySetKeys(a, byName)).toEqual(new Set(["a", "b"]));
   });
 });

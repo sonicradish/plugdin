@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 import { adopt, formatAdoptResult } from "./commands/adopt.js";
 import { doctor } from "./commands/doctor.js";
-import { explain, UnknownLoadoutError } from "./commands/explain.js";
+import { explain } from "./commands/explain.js";
 import { formatDoctor, isClean } from "./commands/format-doctor.js";
 import { formatExplain } from "./commands/format-explain.js";
 import { pickOrCreateLoadout } from "./commands/pick-loadout.js";
 import { execRun, normalizeClientArg, parseRunArgs, prepareRun, RefusedToLaunchError } from "./commands/run.js";
+import { LoadoutConfigError } from "./domain/errors.js";
 import { EnquirerPrompter } from "./tui/enquirer-prompter.js";
 import { shouldUseColor } from "./util/color.js";
 
@@ -44,7 +45,7 @@ async function main(argv: readonly string[]): Promise<number> {
       const anyRefusals = Object.values(result.projections).some((p) => p.refusals.length > 0);
       return anyRefusals ? 1 : 0;
     } catch (err) {
-      if (err instanceof UnknownLoadoutError) {
+      if (err instanceof LoadoutConfigError) {
         console.error(err.message);
         return 2;
       }
@@ -60,9 +61,17 @@ async function main(argv: readonly string[]): Promise<number> {
   }
 
   if (command === "doctor") {
-    const report = await doctor(process.cwd());
-    console.log(formatDoctor(report));
-    return isClean(report) ? 0 : 1;
+    try {
+      const report = await doctor(process.cwd());
+      console.log(formatDoctor(report));
+      return isClean(report) ? 0 : 1;
+    } catch (err) {
+      if (err instanceof LoadoutConfigError) {
+        console.error(err.message);
+        return 2;
+      }
+      throw err;
+    }
   }
 
   if (command === "run") {
@@ -73,6 +82,7 @@ async function main(argv: readonly string[]): Promise<number> {
       return 2;
     }
     let { loadoutName, passthroughArgs } = parseRunArgs(clientRest);
+    const noLoadoutNamed = loadoutName === undefined;
     try {
       // No --loadout given, and there's a human at the other end of stdin/stdout to ask:
       // show the picker (PLAN.md Phase 6) instead of silently falling back. A non-interactive
@@ -88,9 +98,15 @@ async function main(argv: readonly string[]): Promise<number> {
         }
       }
       const prepared = await prepareRun(process.cwd(), client, loadoutName, passthroughArgs);
+      // Only the non-interactive fallback (loadoutName still undefined here — the picker
+      // above wasn't shown) is silent otherwise: nothing else prints which Loadout was
+      // actually used before exec'ing the Client.
+      if (noLoadoutNamed && loadoutName === undefined) {
+        console.error(`plugged-in: no --loadout given; using "${prepared.loadoutName}"`);
+      }
       return await execRun(prepared);
     } catch (err) {
-      if (err instanceof UnknownLoadoutError) {
+      if (err instanceof LoadoutConfigError) {
         console.error(err.message);
         return 2;
       }

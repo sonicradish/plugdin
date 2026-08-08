@@ -34,10 +34,18 @@ plugged-in explain none         # the built-in "everything off" baseline
 ```
 
 Exit code: `0` if nothing was refused, `1` if at least one Component couldn't be faithfully
-projected for at least one Client, `2` if the named Loadout doesn't exist.
+projected for at least one Client, `2` if the Loadout itself is unusable (doesn't exist,
+references an unknown baseline, has a baseline cycle, lists the same key in both `allow` and
+`deny`, or its TOML file fails to parse) — these print a one-line message, not a stack trace.
 
 Run this before `run` any time you're not sure what a Loadout will actually do — it's the
 same resolution and Projection logic `run` uses, just without the last step.
+
+Every Component line is also labeled `(explicit)` or `(baseline default)` — `(explicit)`
+means an `allow`/`deny` somewhere in this Loadout's baseline chain deliberately set that
+Component's state; `(baseline default)` means it's just falling through to the chain's
+terminal `all`/`none` untouched. This is the fast way to check "did my `allow`/`deny` list
+actually do what I meant," instead of eyeballing the full roster against the TOML by hand.
 
 ## `plugged-in doctor`
 
@@ -53,7 +61,8 @@ Read-only. Reports:
 plugged-in doctor
 ```
 
-Exit code: `0` if clean, `1` if anything above was found.
+Exit code: `0` if clean, `1` if anything above was found, `2` if a Loadout file itself fails to
+parse (same "print a message, not a stack trace" behavior as `explain`).
 
 ## `plugged-in adopt [--dry-run] [--undo]`
 
@@ -86,16 +95,20 @@ plugged-in run codex -p "hi" --loadout dev --model gpt-5.5   # --loadout can go 
 ```
 
 If a Projection has refusals, `run` prints them (same message `explain` would show) and exits
-**without launching anything** — exit code `3`. Exit code `2` means the named Loadout doesn't
-exist, or the first argument wasn't `claude-code`/`codex`. Otherwise the exit code is whatever
-the Client itself exited with.
+**without launching anything** — exit code `3`. Exit code `2` means either the first argument
+wasn't `claude-code`/`codex`, or the Loadout itself is unusable (same set of cases as
+`explain`'s exit `2`: doesn't exist, unknown baseline, baseline cycle, an allow/deny
+contradiction, or unparseable TOML) — nothing gets launched in either case. Otherwise the exit
+code is whatever the Client itself exited with.
 
 ### No `--loadout` given
 
 - **Interactively** (both stdin and stdout are a real terminal): shows a picker — see below.
-- **Non-interactively** (piped, scripted, CI): silently uses the project's default Loadout
+- **Non-interactively** (piped, scripted, CI): uses the project's default Loadout
   (`.plugged-in/config.toml`'s `default_loadout`), or the built-in `all` baseline if the
-  project declares none. Nothing prompts, nothing hangs waiting for input that isn't coming.
+  project declares none. Nothing prompts, nothing hangs waiting for input that isn't coming —
+  but it isn't silent either: `plugged-in: no --loadout given; using "<name>"` goes to stderr
+  before the Client launches, so a script's log always shows which Loadout actually ran.
 
 ## Creating a Loadout
 
@@ -108,10 +121,16 @@ in the toggle step, Space to flip an item:
 ```
 ? No --loadout given. Pick one: … 
 ❯ dev (project)
+  off (project) — ⚠ 3 refusals, see `explain`
   all — everything on (native default)
   none — everything off
   Create a new Loadout...
 ```
+
+Each existing Loadout is resolved and projected before the menu is drawn, so one that would
+refuse to launch (or whose TOML is itself broken — an unknown baseline, a cycle, an
+allow/deny contradiction) is flagged right there, before you commit to it — not after, as a
+wall of refusal text once `run` has already tried.
 
 Move down to "Create a new Loadout..." and press Enter:
 
