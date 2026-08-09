@@ -13,6 +13,8 @@ Phase 0 empirical probes and [spikes/FINDINGS.md](./spikes/FINDINGS.md) their re
   actually lives on disk.
 - **[docs/usage.md](./docs/usage.md)** — the full command reference: every flag, exit codes,
   and both ways to create a Loadout (the interactive picker and by hand).
+- **[docs/releasing.md](./docs/releasing.md)** — how a version reaches npm: the CI and publish
+  workflows, trusted-publisher setup, and cutting a release.
 
 ## Setup
 
