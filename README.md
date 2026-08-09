@@ -25,7 +25,7 @@ npm run build     # compiles src/ -> dist/, which package.json's bin points at
 ```bash
 pluggedin explain [loadout]                        # read-only: preview a Loadout, no I/O
 pluggedin doctor                                    # read-only: Annotation drift, collisions
-pluggedin adopt [--dry-run] [--undo]                 # write/remove Claude Code Annotations
+pluggedin adopt [--dry-run] [--undo]                 # only needed for Claude Code support
 pluggedin run <claude-code|codex> [--loadout X] [native args...]
                                                       # launches with --loadout omitted:
                                                       #   TTY  -> interactive picker/creator

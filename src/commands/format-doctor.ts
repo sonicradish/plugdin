@@ -10,6 +10,9 @@ export function formatDoctor(report: DoctorReport): string {
   }
 
   lines.push(`Unannotated skills: ${report.unannotatedSkills.length}`);
+  if (report.unannotatedSkills.length > 0) {
+    lines.push("  (only matters for Claude Code — Codex reads skills natively, no adopt needed)");
+  }
   for (const c of report.unannotatedSkills) lines.push(`  ${c.id.key} — run \`pluggedin adopt\` to make it addressable on Claude Code`);
 
   lines.push(`Drifted Annotations: ${report.driftedAnnotations.length}`);

@@ -15,7 +15,9 @@ const USAGE = `pluggedin — decide which plugins, skills, and MCP servers a cod
 Usage:
   pluggedin explain [loadout]     Print what a Loadout would produce, for both Clients
   pluggedin adopt [--dry-run] [--undo]
-                                    Write/remove Claude Code Annotations for loose skills
+                                    Write/remove Claude Code Annotations for loose skills.
+                                    Only needed for Claude Code support — Codex reads skills
+                                    natively and never needs this.
   pluggedin doctor                Report Annotation drift, unannotated skills, collisions
   pluggedin run <claude|claude-code|codex> [--loadout NAME] [native args...]
                                     Launch a Client with a Loadout applied. Everything

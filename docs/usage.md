@@ -51,7 +51,7 @@ actually do what I meant," instead of eyeballing the full roster against the TOM
 
 Read-only. Reports:
 
-- **Unannotated skills** — loose skills Claude Code can't filter yet (no `.claude-plugin/plugin.json` beside them).
+- **Unannotated skills** — loose skills Claude Code can't filter yet (no `.claude-plugin/plugin.json` beside them). Only matters if you use Claude Code — Codex reads skills natively and needs no Annotation, so this line is safe to ignore on a Codex-only setup.
 - **Drifted Annotations** — an Annotation pluggedin wrote whose `name` no longer matches the skill's current name (e.g. after a rename, or `npx skills update` touching the skill).
 - **Foreign Annotations** — a `.claude-plugin/plugin.json` that exists but wasn't written by pluggedin. Reported, never modified.
 - **Identity collisions** — the same skill name found under both the global and project skill roots.
@@ -65,6 +65,13 @@ Exit code: `0` if clean, `1` if anything above was found, `2` if a Loadout file 
 parse (same "print a message, not a stack trace" behavior as `explain`).
 
 ## `pluggedin adopt [--dry-run] [--undo]`
+
+**Only needed if you use Claude Code.** Codex reads skills natively via `-c skills.config=[...]`
+and needs no shim. Claude Code has no native skill filter at all, so a loose skill is *always*
+visible to it regardless of Annotation — `adopt` only matters the moment a Claude Code Loadout
+tries to turn a specific skill *off*; without an Annotation, Projection has no mechanism to
+honor that and refuses instead (see `explain`'s REFUSED section). If you only run
+`pluggedin run codex`, you can skip this command entirely.
 
 Writes (or removes) the Annotations `doctor` says are missing, for every discovered skill.
 
