@@ -45,7 +45,7 @@ jobs:
             echo "::error::Release tag $TAG does not match package.json version $pkg_version"
             exit 1
           fi
-          echo "Publishing pluggedin@$pkg_version"
+          echo "Publishing $(node -p "require('./package.json').name")@$pkg_version"
 
       # prepublishOnly runs the build and the test suite before the tarball is made.
       - run: npm publish --provenance --access public

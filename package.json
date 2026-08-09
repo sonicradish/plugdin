@@ -1,5 +1,5 @@
 {
-  "name": "pluggedin",
+  "name": "pluggedin-cli",
   "version": "0.2.0",
   "description": "Decides which plugins, skills, and MCP servers are active in a coding-agent session, portable across agent clients.",
   "type": "module",

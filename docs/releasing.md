@@ -2,6 +2,12 @@
 
 How a version of pluggedin gets from `main` to npm. Two workflows do the work:
 
+> The npm package is named **`pluggedin-cli`**, not `pluggedin`. The registry rejects the
+> unscoped name `pluggedin` as too similar to an unrelated existing package, `plugged-in`. The
+> installed command is still `pluggedin` — that comes from `package.json`'s `bin`, not from the
+> package name.
+
+
 - **[.github/workflows/ci.yml](../.github/workflows/ci.yml)** — typecheck, test, and build on
   every push to `main` and every pull request, against Node 20 and 22 (the range
   `package.json`'s `engines` claims to support).
@@ -51,7 +57,7 @@ this has to be run somewhere with a browser available.
 registry. Confirm it landed:
 
 ```bash
-npm view pluggedin version
+npm view pluggedin-cli version
 ```
 
 Only this first publish needs 2FA or a token. Once trusted publishing is configured, the
