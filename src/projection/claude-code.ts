@@ -78,5 +78,6 @@ export function projectClaudeCode(activation: Activation, workDir: string): Proj
     args,
     generatedFiles: [settingsFile, mcpConfigFile],
     refusals,
+    warnings: [],
   };
 }

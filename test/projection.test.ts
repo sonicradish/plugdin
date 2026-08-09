@@ -123,7 +123,7 @@ describe("projectCodex", () => {
     expect(projection.refusals).toEqual([]);
   });
 
-  it("refuses to turn an MCP server off rather than guess at a lossy re-emission", () => {
+  it("warns (non-blocking) instead of refusing when turning an MCP server off would need a lossy re-emission", () => {
     const components: Component[] = [
       {
         id: { kind: "mcp-server", key: "srv-1" },
@@ -134,8 +134,10 @@ describe("projectCodex", () => {
       },
     ];
     const projection = projectCodex(activation(components, []));
-    expect(projection.refusals).toHaveLength(1);
-    expect(projection.refusals[0]?.component.key).toBe("srv-1");
+    expect(projection.refusals).toEqual([]); // does not block launch
+    expect(projection.args).toEqual([]); // and emits no override — server is left as Codex already has it
+    expect(projection.warnings).toHaveLength(1);
+    expect(projection.warnings[0]?.component.key).toBe("srv-1");
   });
 
   it("escapes plugin keys and skill names embedded in -c argument values", () => {

@@ -60,19 +60,28 @@ written to the Client's own config:
   `-c skills.config=[...]` override listing every skill (not just the changed ones — see
   below).
 
-Projection can **refuse** instead of guessing. Two cases currently do:
-- Turning an *unannotated* skill off for Claude Code — there's no native filter for it, so
-  honoring the request would require silently doing nothing, which contradicts the point of
-  the tool. Fixed by running `adopt` first.
-- Turning an already-configured Codex MCP server off — the only mechanism found requires
-  re-emitting its full config struct, which this tool only captures a subset of fields for
-  (command/args/env). Rather than emit a lossy, possibly-wrong struct, it refuses. See
+Projection can **refuse** instead of guessing, and separately can **warn** — the same
+underlying gap (a Component can't be faithfully turned to the state a Loadout wants), but two
+different responses depending on whether there's anything a caller could actually *do* about
+it:
+
+- **Refuses (blocks launch):** turning an *unannotated* skill off for Claude Code — there's no
+  native filter for it, so honoring the request would require silently doing nothing, which
+  contradicts the point of the tool. There's a real fix (`adopt`), so it's worth stopping for.
+- **Warns (non-blocking — launch proceeds, the Component is left as the Client's own config
+  already has it):** turning an already-configured Codex MCP server off — the only mechanism
+  found requires re-emitting its full config struct, which this tool only captures a subset of
+  fields for (command/args/env). Unlike the Claude Code case, there is no fix available
+  *through this tool* — the gap is permanent, not actionable — so blocking every launch
+  forever would just force every Loadout to explicitly `allow` every pre-existing Codex MCP
+  server. `explain` still surfaces it (as `NOTE`, not `REFUSED`) so it's never silent. See
   `spikes/FINDINGS.md` and the "Verified foundations" table in `PLAN.md`.
 
 **4. Activation** (`src/commands/run.ts`) — Materializes the Projection's generated files to
 a fresh temp directory (nothing under the Client's own config directories is ever touched)
 and execs the native Client with the Projection's args prepended to whatever passthrough args
-the user gave. If the Projection has any refusals, `run` stops before spawning anything.
+the user gave. If the Projection has any refusals, `run` stops before spawning anything;
+warnings print to stderr first but never block.
 
 `explain` (`src/commands/explain.ts`) runs stages 1–3 and prints the result; it never reaches
 stage 4, so it has zero side effects — useful specifically because every stage above it is an
@@ -85,7 +94,7 @@ needs to be inspectable before it's trusted.
 |---|---|---|
 | Plugins | `enabledPlugins` map via `--settings` | `-c plugins."name@marketplace".enabled=false` |
 | Loose skills | No native filter → Annotation (`.claude-plugin/plugin.json`) makes a skill load as `<name>@skills-dir`, then `enabledPlugins` filters it like any plugin | `skills.config` via `-c`, natively — no Annotation needed |
-| MCP servers | `--mcp-config` (full surviving set) + `--strict-mcp-config` | Turning one *off* has no verified faithful mechanism yet (Projection refuses) |
+| MCP servers | `--mcp-config` (full surviving set) + `--strict-mcp-config` | Turning one *off* has no verified faithful mechanism (Projection warns, non-blocking, and leaves it on) |
 | Identity | `name@marketplace` (plugins, Annotated skills); a command+args fingerprint (MCP servers) | Same |
 
 Everything here is empirically verified against a real install, not read from vendor docs —

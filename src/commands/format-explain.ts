@@ -55,6 +55,14 @@ function formatClientSection(result: ExplainResult, client: ClientId, label: str
     }
   }
 
+  if (projection.warnings.length > 0) {
+    lines.push("");
+    lines.push(p.bold(p.yellow("  NOTE — non-blocking, left as the Client's own config already has it:")));
+    for (const warning of projection.warnings) {
+      lines.push(p.yellow(`    ${warning.component.kind} ${warning.component.key}: ${warning.reason}`));
+    }
+  }
+
   return lines.join("\n");
 }
 

@@ -106,6 +106,12 @@ async function main(argv: readonly string[]): Promise<number> {
       if (noLoadoutNamed && loadoutName === undefined) {
         console.error(`pluggedin: no --loadout given; using "${prepared.loadoutName}"`);
       }
+      if (prepared.projection.warnings.length > 0) {
+        console.error(`Note: ${prepared.projection.warnings.length} Component(s) could not be faithfully projected — launching anyway, left as-is:`);
+        for (const warning of prepared.projection.warnings) {
+          console.error(`  ${warning.component.kind} ${warning.component.key}: ${warning.reason}`);
+        }
+      }
       return await execRun(prepared);
     } catch (err) {
       if (err instanceof LoadoutConfigError) {

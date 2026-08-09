@@ -105,9 +105,27 @@ describe("execRun", () => {
         args: [],
         generatedFiles: [],
         refusals: [{ component: { kind: "skill" as const, key: "x@skills-dir" }, reason: "needs adopt" }],
+        warnings: [],
       },
       nativeArgs: [],
     };
     await expect(execRun(prepared)).rejects.toThrow(RefusedToLaunchError);
+  });
+
+  it("does not throw and still launches when the Projection only has warnings (non-blocking)", async () => {
+    const prepared = {
+      client: "codex" as const,
+      binary: "true", // a real, harmless binary that just exits 0 — proves execRun didn't refuse
+      loadoutName: "all",
+      projection: {
+        client: "codex" as const,
+        args: [],
+        generatedFiles: [],
+        refusals: [],
+        warnings: [{ component: { kind: "mcp-server" as const, key: "srv-1" }, reason: "no faithful way to disable it" }],
+      },
+      nativeArgs: [],
+    };
+    await expect(execRun(prepared)).resolves.toBe(0);
   });
 });

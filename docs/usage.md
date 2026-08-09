@@ -47,6 +47,12 @@ Component's state; `(baseline default)` means it's just falling through to the c
 terminal `all`/`none` untouched. This is the fast way to check "did my `allow`/`deny` list
 actually do what I meant," instead of eyeballing the full roster against the TOML by hand.
 
+A Component that couldn't be faithfully projected shows up as either `REFUSED` (blocks `run`
+entirely — there's a real fix, usually `adopt`) or `NOTE` (non-blocking — `run` proceeds and
+leaves the Component exactly as the Client's own config already has it; currently only
+"turn an already-configured Codex MCP server off", which has no faithful mechanism at all, so
+blocking forever would help no one).
+
 ## `pluggedin doctor`
 
 Read-only. Reports:
@@ -107,6 +113,10 @@ wasn't `claude-code`/`codex`, or the Loadout itself is unusable (same set of cas
 `explain`'s exit `2`: doesn't exist, unknown baseline, baseline cycle, an allow/deny
 contradiction, or unparseable TOML) — nothing gets launched in either case. Otherwise the exit
 code is whatever the Client itself exited with.
+
+If a Projection only has *warnings* (currently: an already-configured Codex MCP server that
+can't be faithfully turned off), `run` prints a `Note:` line to stderr for each one and then
+launches anyway — the Component is simply left as the Client's own config already has it.
 
 ### No `--loadout` given
 

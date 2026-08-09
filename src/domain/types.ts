@@ -104,6 +104,12 @@ export interface Projection {
   readonly generatedFiles: readonly GeneratedFile[];
   /** Components that could not be faithfully projected; launch should refuse if non-empty. */
   readonly refusals: readonly Refusal[];
+  /** Components that could not be faithfully projected but launch proceeds anyway, leaving
+   * the Component in whatever state the Client's own config already has it — printed as a
+   * heads-up, never blocks. Distinct from `refusals`: a `Refusal` has no way to become true no
+   * matter what the user does *through this tool*; a warning is the same gap, downgraded
+   * because the Component was already left in a reasonable state on its own. */
+  readonly warnings: readonly Refusal[];
 }
 
 export interface GeneratedFile {

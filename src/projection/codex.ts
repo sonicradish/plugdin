@@ -20,14 +20,17 @@ function tomlString(value: string): string {
  * struct with no bare toggle. We only capture (command, args, env) from discovery — nowhere
  * near 27 fields — so re-emitting a server to change its state would be a lossy round-trip.
  * Turning one ON needs no override (it's already in the user's config.toml and loads by
- * default). Turning one OFF has no verified faithful mechanism, so Projection refuses rather
- * than guess (PLAN.md Principal risk #1).
+ * default). Turning one OFF has no verified faithful mechanism — there is nothing a caller
+ * can *do* about that through this tool, so unlike other gaps this one is a non-blocking
+ * `warnings` entry rather than a `refusals` entry: launch proceeds and the server is simply
+ * left in whatever state Codex's own config already has it (usually on).
  */
 export function projectCodex(activation: Activation): Projection {
   const { inventory, loadout } = activation;
   const decisions = loadout.decisions;
   const args: string[] = [];
   const refusals: Refusal[] = [];
+  const warnings: Refusal[] = [];
 
   const skillOverrides: string[] = [];
 
@@ -47,10 +50,10 @@ export function projectCodex(activation: Activation): Projection {
 
     if (component.id.kind === "mcp-server") {
       if (decision) continue; // already on by default; no override needed
-      refusals.push({
+      warnings.push({
         component: component.id,
         reason:
-          "no verified way to disable an already-configured Codex MCP server without a lossy re-emission of its full struct (PLAN.md \"Verified foundations\": mcp_servers.<n> is a 27-field struct with no bare toggle)",
+          "no verified way to disable an already-configured Codex MCP server without a lossy re-emission of its full config entry, which this tool only captures a subset of the fields for — leaving it as Codex's own config already has it",
       });
     }
   }
@@ -59,5 +62,5 @@ export function projectCodex(activation: Activation): Projection {
     args.push("-c", `skills.config=[${skillOverrides.join(",")}]`);
   }
 
-  return { client: "codex", args, generatedFiles: [], refusals };
+  return { client: "codex", args, generatedFiles: [], refusals, warnings };
 }
