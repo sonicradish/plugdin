@@ -36,7 +36,7 @@ export function formatAdoptResult(results: readonly AppliedAction[], opts: Adopt
         lines.push(`[${applied || opts.dryRun ? "remove" : "skip  "}] ${key} — ${verb} remove .claude-plugin/plugin.json`);
         break;
       case "skip-foreign-annotation":
-        lines.push(`[skip  ] ${key} — has a .claude-plugin/plugin.json pluggedin did not write; leaving it alone`);
+        lines.push(`[skip  ] ${key} — has a .claude-plugin/plugin.json plugdin did not write; leaving it alone`);
         break;
     }
   }

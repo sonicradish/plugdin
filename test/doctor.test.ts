@@ -18,15 +18,15 @@ const { doctor } = await import("../src/commands/doctor.js");
 describe("doctor", () => {
   let cwd: string;
   let claudeHome: string;
-  let pluggedInHome: string;
-  let originalPluggedInHome: string | undefined;
+  let plugdinHome: string;
+  let originalPlugdinHome: string | undefined;
 
   beforeEach(async () => {
-    cwd = await mkdtemp(join(tmpdir(), "pluggedin-cwd-"));
-    claudeHome = await mkdtemp(join(tmpdir(), "pluggedin-claude-home-"));
-    pluggedInHome = await mkdtemp(join(tmpdir(), "pluggedin-home-"));
-    originalPluggedInHome = process.env.PLUGGEDIN_HOME;
-    process.env.PLUGGEDIN_HOME = pluggedInHome; // isolate from the real ~/.pluggedin
+    cwd = await mkdtemp(join(tmpdir(), "plugdin-cwd-"));
+    claudeHome = await mkdtemp(join(tmpdir(), "plugdin-claude-home-"));
+    plugdinHome = await mkdtemp(join(tmpdir(), "plugdin-home-"));
+    originalPlugdinHome = process.env.PLUGDIN_HOME;
+    process.env.PLUGDIN_HOME = plugdinHome; // isolate from the real ~/.plugdin
     runClientCommand.mockImplementation(async (bin: string, args: readonly string[]) => {
       if (bin === "claude") return { available: true, stdout: "[]", stderr: "" };
       if (bin === "codex" && args.join(" ") === "plugin list --json") return { available: true, stdout: JSON.stringify({ installed: [] }), stderr: "" };
@@ -35,11 +35,11 @@ describe("doctor", () => {
   });
 
   afterEach(async () => {
-    if (originalPluggedInHome === undefined) delete process.env.PLUGGEDIN_HOME;
-    else process.env.PLUGGEDIN_HOME = originalPluggedInHome;
+    if (originalPlugdinHome === undefined) delete process.env.PLUGDIN_HOME;
+    else process.env.PLUGDIN_HOME = originalPlugdinHome;
     await rm(cwd, { recursive: true, force: true });
     await rm(claudeHome, { recursive: true, force: true });
-    await rm(pluggedInHome, { recursive: true, force: true });
+    await rm(plugdinHome, { recursive: true, force: true });
   });
 
   async function makeSkill(root: string, name: string, description = "d") {
@@ -75,7 +75,7 @@ describe("doctor", () => {
     expect(report.driftedAnnotations[0]?.component.name).toBe("tdd");
   });
 
-  it("flags a foreign (non-pluggedin) plugin.json without touching it", async () => {
+  it("flags a foreign (non-plugdin) plugin.json without touching it", async () => {
     const dir = await makeSkill(join(claudeHome, "skills"), "tdd");
     await mkdir(join(dir, ".claude-plugin"), { recursive: true });
     await writeFile(join(dir, ".claude-plugin", "plugin.json"), JSON.stringify({ name: "hand-authored" }));

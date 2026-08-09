@@ -1,6 +1,6 @@
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { readAnnotation, isManagedByPluggedIn } from "../adopt/annotate.js";
+import { readAnnotation, isManagedByPlugdin } from "../adopt/annotate.js";
 import { buildInventory, type DiscoveryWarning } from "../inventory/index.js";
 import { discoverLooseSkills } from "../inventory/skills.js";
 import { loadLoadouts } from "../loadout/store.js";
@@ -35,7 +35,7 @@ export interface DoctorReport {
 /**
  * Reports Annotation drift, unannotated skills, and identity collisions (PLAN.md Phase 5).
  * Drift specifically covers `npx skills update` (or a rename) clobbering or outdating an
- * Annotation pluggedin wrote — spikes/s4-annotation-survival.md flagged this as something
+ * Annotation plugdin wrote — spikes/s4-annotation-survival.md flagged this as something
  * `doctor` must catch since it can't yet be spiked live.
  */
 export async function doctor(cwd: string = process.cwd(), claudeHome: string = join(homedir(), ".claude")): Promise<DoctorReport> {
@@ -57,7 +57,7 @@ export async function doctor(cwd: string = process.cwd(), claudeHome: string = j
       unannotatedSkills.push(skill);
       continue;
     }
-    if (!isManagedByPluggedIn(manifest)) {
+    if (!isManagedByPlugdin(manifest)) {
       foreignAnnotations.push(skill);
       continue;
     }

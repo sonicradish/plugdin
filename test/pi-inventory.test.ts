@@ -42,7 +42,7 @@ describe("discoverPiPackages", () => {
   let dir: string;
 
   beforeEach(async () => {
-    dir = await mkdtemp(join(tmpdir(), "pluggedin-pi-pkg-"));
+    dir = await mkdtemp(join(tmpdir(), "plugdin-pi-pkg-"));
   });
   afterEach(async () => {
     await rm(dir, { recursive: true, force: true });
@@ -92,7 +92,7 @@ describe("discoverPiMcpServers", () => {
   let cwd: string;
 
   beforeEach(async () => {
-    cwd = await mkdtemp(join(tmpdir(), "pluggedin-pi-mcp-"));
+    cwd = await mkdtemp(join(tmpdir(), "plugdin-pi-mcp-"));
   });
   afterEach(async () => {
     await rm(cwd, { recursive: true, force: true });

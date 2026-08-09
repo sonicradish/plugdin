@@ -1,4 +1,4 @@
-# pluggedin
+# plugdin
 
 Decides which plugins, skills, and MCP servers appear to a coding agent in a given session,
 and makes that decision reusable and portable across agent clients (Claude Code, Codex,
@@ -18,6 +18,20 @@ Phase 0 empirical probes and [spikes/FINDINGS.md](./spikes/FINDINGS.md) their re
 
 ## Setup
 
+No install needed — `npx` fetches and runs it:
+
+```bash
+npx plugdin explain
+```
+
+Or install it once so `plugdin` is on your PATH:
+
+```bash
+npm install -g plugdin
+```
+
+To work on plugdin itself, build from source instead:
+
 ```bash
 npm install
 npm run build     # compiles src/ -> dist/, which package.json's bin points at
@@ -26,10 +40,10 @@ npm run build     # compiles src/ -> dist/, which package.json's bin points at
 ## Usage summary
 
 ```bash
-pluggedin explain [loadout]                        # read-only: preview a Loadout, no I/O
-pluggedin doctor                                    # read-only: Annotation drift, collisions
-pluggedin adopt [--dry-run] [--undo]                 # only needed for Claude Code support
-pluggedin run <claude|codex|grok|opencode|pi> [--loadout X] [native args...]
+plugdin explain [loadout]                        # read-only: preview a Loadout, no I/O
+plugdin doctor                                    # read-only: Annotation drift, collisions
+plugdin adopt [--dry-run] [--undo]                 # only needed for Claude Code support
+plugdin run <claude|codex|grok|opencode|pi> [--loadout X] [native args...]
                                                       # launches with --loadout omitted:
                                                       #   TTY  -> interactive picker/creator
                                                       #   else -> project default, else "all"
@@ -42,8 +56,8 @@ rebuilding:
 npx tsx src/cli.ts explain
 ```
 
-A Loadout is a TOML file under `~/.pluggedin/loadouts/<name>.toml` (global) or
-`.pluggedin/loadouts/<name>.toml` (project — see `.pluggedin/loadouts/dev.toml` in this
+A Loadout is a TOML file under `~/.plugdin/loadouts/<name>.toml` (global) or
+`.plugdin/loadouts/<name>.toml` (project — see `.plugdin/loadouts/dev.toml` in this
 repo for a real example). Project Loadouts override global ones by name, never merge. See
 [docs/usage.md](./docs/usage.md#creating-a-loadout) for the full format and the interactive
 alternative.

@@ -57,7 +57,7 @@ export interface McpServerSpec {
   readonly command: string;
   readonly args: readonly string[];
   readonly env: Readonly<Record<string, string>>;
-  /** Raw fields this Client's config carries that pluggedin does not model explicitly. */
+  /** Raw fields this Client's config carries that plugdin does not model explicitly. */
   readonly raw?: Readonly<Record<string, unknown>>;
 }
 

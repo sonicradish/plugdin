@@ -8,9 +8,9 @@ import { projectAll, type ProjectionContext } from "../projection/index.js";
 import type { Prompter } from "../tui/prompter.js";
 import type { Baseline, Component, Inventory, Loadout } from "../domain/types.js";
 
-const ALL_OPTION = "__pluggedin_all__";
-const NONE_OPTION = "__pluggedin_none__";
-const CREATE_OPTION = "__pluggedin_create__";
+const ALL_OPTION = "__plugdin_all__";
+const NONE_OPTION = "__plugdin_none__";
+const CREATE_OPTION = "__plugdin_create__";
 
 export interface PickLoadoutResult {
   readonly loadoutName: string;
@@ -57,7 +57,7 @@ function describeExistingLoadout(loadout: Loadout, inventory: Inventory, loadout
     // of a config this preview would have to read off disk — so the Grok base config is left
     // empty rather than making the whole picker async to fetch something unused.
     const context: ProjectionContext = {
-      workDir: join(tmpdir(), "pluggedin", "preview"),
+      workDir: join(tmpdir(), "plugdin", "preview"),
       grokHome: join(homedir(), ".grok"),
       grokBaseConfigToml: "",
       grokSkillRoots: [],
@@ -129,8 +129,8 @@ async function createLoadoutInteractively(
   const name = await promptForNewName(prompter, existingNames);
 
   const scope = (await prompter.select("Scope", [
-    { value: "project", label: "project — .pluggedin/loadouts/ (committed, shared with the team)" },
-    { value: "global", label: "global — ~/.pluggedin/loadouts/ (just you, any project)" },
+    { value: "project", label: "project — .plugdin/loadouts/ (committed, shared with the team)" },
+    { value: "global", label: "global — ~/.plugdin/loadouts/ (just you, any project)" },
   ])) as "project" | "global";
 
   const baselineChoice = await prompter.select("Baseline", [

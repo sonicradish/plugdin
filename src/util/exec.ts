@@ -68,7 +68,7 @@ export async function runClientCommandToFile(
   args: readonly string[],
   opts?: { readonly cwd?: string; readonly timeoutMs?: number },
 ): Promise<CommandOutcome> {
-  const dir = await mkdtemp(join(tmpdir(), "pluggedin-capture-"));
+  const dir = await mkdtemp(join(tmpdir(), "plugdin-capture-"));
   const outPath = join(dir, "stdout");
   const handle = await open(outPath, "w");
   try {

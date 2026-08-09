@@ -111,7 +111,7 @@ export function formatExplain(result: ExplainResult, options: FormatExplainOptio
   const anyRefusals = Object.values(result.projections).some((proj) => proj.refusals.length > 0);
   if (anyRefusals) {
     sections.push("");
-    sections.push(p.bold(p.red("pluggedin run would refuse to launch until the REFUSED items above are resolved.")));
+    sections.push(p.bold(p.red("plugdin run would refuse to launch until the REFUSED items above are resolved.")));
   }
 
   return sections.join("\n");

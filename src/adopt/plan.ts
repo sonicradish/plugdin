@@ -1,4 +1,4 @@
-import { readAnnotation, isManagedByPluggedIn } from "./annotate.js";
+import { readAnnotation, isManagedByPlugdin } from "./annotate.js";
 import type { Component } from "../domain/types.js";
 
 export type AdoptActionKind = "annotate" | "already-annotated" | "remove-annotation" | "skip-foreign-annotation";
@@ -10,7 +10,7 @@ export interface AdoptAction {
 
 /**
  * Plans Annotation writes/removals for every loose skill (Claude Code is the only Client
- * that needs this — ADR-0003). Never plans touching a foreign (non-pluggedin-managed)
+ * that needs this — ADR-0003). Never plans touching a foreign (non-plugdin-managed)
  * `.claude-plugin/plugin.json`, forward or in reverse.
  */
 export async function planAdopt(components: readonly Component[], opts: { readonly undo: boolean }): Promise<AdoptAction[]> {
@@ -19,7 +19,7 @@ export async function planAdopt(components: readonly Component[], opts: { readon
 
   for (const component of skills) {
     const existing = await readAnnotation(component.sourcePath);
-    const managed = isManagedByPluggedIn(existing);
+    const managed = isManagedByPlugdin(existing);
     const foreign = existing !== undefined && !managed;
 
     if (opts.undo) {

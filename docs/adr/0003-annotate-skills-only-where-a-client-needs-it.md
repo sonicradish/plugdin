@@ -1,6 +1,6 @@
 # Annotate skills only for Clients that cannot address them
 
-Claude Code has no setting that filters a loose skill, so pluggedin writes
+Claude Code has no setting that filters a loose skill, so plugdin writes
 `.claude-plugin/plugin.json` beside each installed skill; the folder then loads as a plugin
 named `<skill>@skills-dir` that `enabledPlugins` filters at the discovery level. Codex needs
 no such shim — `skills.config = [{ name = "…", enabled = false }]` removes a skill from
@@ -11,8 +11,8 @@ context natively. Annotation is therefore per-Client and applied only where requ
 ADR-0001 forbids mutating Client state to express *activation*. Annotation expresses
 *addressability*: it is one-time, additive, idempotent, inert to every other Client, and
 carries no information about which Loadout is active. Activation still happens entirely
-through session flags. A crashed pluggedin leaves annotated skills behind, and annotated
-skills behave exactly like unannotated ones when pluggedin is not running.
+through session flags. A crashed plugdin leaves annotated skills behind, and annotated
+skills behave exactly like unannotated ones when plugdin is not running.
 
 ## Considered Options
 
@@ -29,6 +29,6 @@ skills behave exactly like unannotated ones when pluggedin is not running.
 
 ## Consequences
 
-Annotation must be reversible (`pluggedin adopt --undo`) and drift-detectable, because
+Annotation must be reversible (`plugdin adopt --undo`) and drift-detectable, because
 `npx skills update` may overwrite an annotated skill folder. The shim becomes unnecessary if
 Claude Code ever reads the Agent Plugins root `plugin.json`, and should be removed then.

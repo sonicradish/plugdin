@@ -19,15 +19,15 @@ const { pickOrCreateLoadout } = await import("../src/commands/pick-loadout.js");
 describe("pickOrCreateLoadout", () => {
   let cwd: string;
   let claudeHome: string;
-  let pluggedInHome: string;
-  let originalPluggedInHome: string | undefined;
+  let plugdinHome: string;
+  let originalPlugdinHome: string | undefined;
 
   beforeEach(async () => {
-    cwd = await mkdtemp(join(tmpdir(), "pluggedin-cwd-"));
-    claudeHome = await mkdtemp(join(tmpdir(), "pluggedin-claude-home-"));
-    pluggedInHome = await mkdtemp(join(tmpdir(), "pluggedin-home-"));
-    originalPluggedInHome = process.env.PLUGGEDIN_HOME;
-    process.env.PLUGGEDIN_HOME = pluggedInHome;
+    cwd = await mkdtemp(join(tmpdir(), "plugdin-cwd-"));
+    claudeHome = await mkdtemp(join(tmpdir(), "plugdin-claude-home-"));
+    plugdinHome = await mkdtemp(join(tmpdir(), "plugdin-home-"));
+    originalPlugdinHome = process.env.PLUGDIN_HOME;
+    process.env.PLUGDIN_HOME = plugdinHome;
     runClientCommand.mockImplementation(async (bin: string, args: readonly string[]) => {
       if (bin === "claude") return { available: true, stdout: "[]", stderr: "" };
       if (bin === "codex" && args.join(" ") === "plugin list --json") return { available: true, stdout: JSON.stringify({ installed: [] }), stderr: "" };
@@ -36,11 +36,11 @@ describe("pickOrCreateLoadout", () => {
   });
 
   afterEach(async () => {
-    if (originalPluggedInHome === undefined) delete process.env.PLUGGEDIN_HOME;
-    else process.env.PLUGGEDIN_HOME = originalPluggedInHome;
+    if (originalPlugdinHome === undefined) delete process.env.PLUGDIN_HOME;
+    else process.env.PLUGDIN_HOME = originalPlugdinHome;
     await rm(cwd, { recursive: true, force: true });
     await rm(claudeHome, { recursive: true, force: true });
-    await rm(pluggedInHome, { recursive: true, force: true });
+    await rm(plugdinHome, { recursive: true, force: true });
   });
 
   async function makeSkill(name: string) {
@@ -50,18 +50,18 @@ describe("pickOrCreateLoadout", () => {
   }
 
   it("offers all/none built-ins and Create..., and returns 'all' when chosen", async () => {
-    const prompter = new FakePrompter().queueSelect("__pluggedin_all__");
+    const prompter = new FakePrompter().queueSelect("__plugdin_all__");
     const result = await pickOrCreateLoadout(cwd, prompter, claudeHome);
     expect(result).toEqual({ loadoutName: "all", created: false });
     expect(prompter.selectPrompts[0]?.options.map((o) => o.value)).toEqual([
-      "__pluggedin_all__",
-      "__pluggedin_none__",
-      "__pluggedin_create__",
+      "__plugdin_all__",
+      "__plugdin_none__",
+      "__plugdin_create__",
     ]);
   });
 
   it("returns 'none' when chosen", async () => {
-    const prompter = new FakePrompter().queueSelect("__pluggedin_none__");
+    const prompter = new FakePrompter().queueSelect("__plugdin_none__");
     const result = await pickOrCreateLoadout(cwd, prompter, claudeHome);
     expect(result).toEqual({ loadoutName: "none", created: false });
   });
@@ -81,7 +81,7 @@ describe("pickOrCreateLoadout", () => {
     await makeSkill("grilling");
 
     const prompter = new FakePrompter()
-      .queueSelect("__pluggedin_create__") // top-level menu
+      .queueSelect("__plugdin_create__") // top-level menu
       .queueInput("my-loadout") // name
       .queueSelect("project") // scope
       .queueSelect("none") // baseline
@@ -102,7 +102,7 @@ describe("pickOrCreateLoadout", () => {
     await makeSkill("grilling");
 
     const prompter = new FakePrompter()
-      .queueSelect("__pluggedin_create__")
+      .queueSelect("__plugdin_create__")
       .queueInput("minus-grilling")
       .queueSelect("project")
       .queueSelect("all")
@@ -120,7 +120,7 @@ describe("pickOrCreateLoadout", () => {
     await writeFile(join(projectLoadoutsDir(cwd), "taken.toml"), `baseline = "all"\n`);
 
     const prompter = new FakePrompter()
-      .queueSelect("__pluggedin_create__")
+      .queueSelect("__plugdin_create__")
       .queueInput("all", "taken", "fresh-name") // "all" is reserved, "taken" already exists
       .queueSelect("project")
       .queueSelect("none");
@@ -136,7 +136,7 @@ describe("pickOrCreateLoadout", () => {
     await mkdir(projectLoadoutsDir(cwd), { recursive: true });
     await writeFile(join(projectLoadoutsDir(cwd), "off.toml"), `baseline = "none"\n`);
 
-    const prompter = new FakePrompter().queueSelect("__pluggedin_none__");
+    const prompter = new FakePrompter().queueSelect("__plugdin_none__");
     await pickOrCreateLoadout(cwd, prompter, claudeHome);
     const option = prompter.selectPrompts[0]?.options.find((o) => o.value === "off");
     expect(option?.label).toContain("⚠ 1 refusal");
@@ -145,7 +145,7 @@ describe("pickOrCreateLoadout", () => {
   it("labels an unannotated skill's toggle item with a Claude Code caveat", async () => {
     await makeSkill("tdd");
 
-    const prompter = new FakePrompter().queueSelect("__pluggedin_create__").queueInput("x").queueSelect("project").queueSelect("none");
+    const prompter = new FakePrompter().queueSelect("__plugdin_create__").queueInput("x").queueSelect("project").queueSelect("none");
     await pickOrCreateLoadout(cwd, prompter, claudeHome);
 
     const item = prompter.toggleListPrompts[0]?.items.find((i) => i.key === "tdd@skills-dir");
@@ -158,7 +158,7 @@ describe("pickOrCreateLoadout", () => {
     await writeFile(join(dir, "SKILL.md"), `---\nname: tdd\ndescription: d\n---\n`);
     await writeAnnotation(dir, "tdd", "d");
 
-    const prompter = new FakePrompter().queueSelect("__pluggedin_create__").queueInput("x").queueSelect("project").queueSelect("none");
+    const prompter = new FakePrompter().queueSelect("__plugdin_create__").queueInput("x").queueSelect("project").queueSelect("none");
     await pickOrCreateLoadout(cwd, prompter, claudeHome);
 
     const item = prompter.toggleListPrompts[0]?.items.find((i) => i.key === "tdd@skills-dir");
@@ -179,7 +179,7 @@ describe("pickOrCreateLoadout", () => {
       return { available: true, stdout: "[]", stderr: "" };
     });
 
-    const prompter = new FakePrompter().queueSelect("__pluggedin_create__").queueInput("x").queueSelect("project").queueSelect("none");
+    const prompter = new FakePrompter().queueSelect("__plugdin_create__").queueInput("x").queueSelect("project").queueSelect("none");
     await pickOrCreateLoadout(cwd, prompter, claudeHome);
 
     const item = prompter.toggleListPrompts[0]?.items.find((i) => i.label.includes("node_repl"));
@@ -190,7 +190,7 @@ describe("pickOrCreateLoadout", () => {
     await mkdir(projectLoadoutsDir(cwd), { recursive: true });
     await writeFile(join(projectLoadoutsDir(cwd), "clean.toml"), `baseline = "none"\n`);
 
-    const prompter = new FakePrompter().queueSelect("__pluggedin_none__");
+    const prompter = new FakePrompter().queueSelect("__plugdin_none__");
     await pickOrCreateLoadout(cwd, prompter, claudeHome);
     const option = prompter.selectPrompts[0]?.options.find((o) => o.value === "clean");
     expect(option?.label).toBe("clean (project)");
@@ -200,7 +200,7 @@ describe("pickOrCreateLoadout", () => {
     await mkdir(projectLoadoutsDir(cwd), { recursive: true });
     await writeFile(join(projectLoadoutsDir(cwd), "broken.toml"), `baseline = "does-not-exist"\n`);
 
-    const prompter = new FakePrompter().queueSelect("__pluggedin_none__");
+    const prompter = new FakePrompter().queueSelect("__plugdin_none__");
     const result = await pickOrCreateLoadout(cwd, prompter, claudeHome);
     expect(result).toEqual({ loadoutName: "none", created: false }); // picking a different option still works
     const option = prompter.selectPrompts[0]?.options.find((o) => o.value === "broken");
@@ -213,7 +213,7 @@ describe("pickOrCreateLoadout", () => {
     await makeSkill("tdd");
 
     const prompter = new FakePrompter()
-      .queueSelect("__pluggedin_create__")
+      .queueSelect("__plugdin_create__")
       .queueInput("mine")
       .queueSelect("project")
       .queueSelect("team-default");

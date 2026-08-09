@@ -16,21 +16,21 @@ describe("isValidLoadoutName", () => {
 });
 
 describe("writeNewLoadoutFile", () => {
-  let pluggedInHome: string;
+  let plugdinHome: string;
   let cwd: string;
-  let originalPluggedInHome: string | undefined;
+  let originalPlugdinHome: string | undefined;
 
   beforeEach(async () => {
-    pluggedInHome = await mkdtemp(join(tmpdir(), "pluggedin-home-"));
-    cwd = await mkdtemp(join(tmpdir(), "pluggedin-cwd-"));
-    originalPluggedInHome = process.env.PLUGGEDIN_HOME;
-    process.env.PLUGGEDIN_HOME = pluggedInHome;
+    plugdinHome = await mkdtemp(join(tmpdir(), "plugdin-home-"));
+    cwd = await mkdtemp(join(tmpdir(), "plugdin-cwd-"));
+    originalPlugdinHome = process.env.PLUGDIN_HOME;
+    process.env.PLUGDIN_HOME = plugdinHome;
   });
 
   afterEach(async () => {
-    if (originalPluggedInHome === undefined) delete process.env.PLUGGEDIN_HOME;
-    else process.env.PLUGGEDIN_HOME = originalPluggedInHome;
-    await rm(pluggedInHome, { recursive: true, force: true });
+    if (originalPlugdinHome === undefined) delete process.env.PLUGDIN_HOME;
+    else process.env.PLUGDIN_HOME = originalPlugdinHome;
+    await rm(plugdinHome, { recursive: true, force: true });
     await rm(cwd, { recursive: true, force: true });
   });
 
@@ -45,7 +45,7 @@ describe("writeNewLoadoutFile", () => {
     expect(contents).toContain("tdd@skills-dir");
   });
 
-  it("writes a global-scoped Loadout under PLUGGEDIN_HOME", async () => {
+  it("writes a global-scoped Loadout under PLUGDIN_HOME", async () => {
     const path = await writeNewLoadoutFile({ name: "everyday", scope: "global", baseline: { kind: "all" }, allow: [], deny: [] }, cwd);
     expect(path).toBe(join(globalLoadoutsDir(), "everyday.toml"));
     const contents = await readFile(path, "utf8");

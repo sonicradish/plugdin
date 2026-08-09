@@ -10,23 +10,23 @@ import { LoadoutConfigError } from "./domain/errors.js";
 import { EnquirerPrompter } from "./tui/enquirer-prompter.js";
 import { shouldUseColor } from "./util/color.js";
 
-const USAGE = `pluggedin — decide which plugins, skills, and MCP servers a coding agent session sees
+const USAGE = `plugdin — decide which plugins, skills, and MCP servers a coding agent session sees
 
 Usage:
-  pluggedin explain [loadout]     Print what a Loadout would produce, for every Client
-  pluggedin adopt [--dry-run] [--undo]
+  plugdin explain [loadout]     Print what a Loadout would produce, for every Client
+  plugdin adopt [--dry-run] [--undo]
                                     Write/remove Claude Code Annotations for loose skills.
                                     Only needed for Claude Code support — every other Client
                                     addresses skills natively and never needs this.
-  pluggedin doctor                Report Annotation drift, unannotated skills, collisions
-  pluggedin run <claude|codex|grok|opencode|pi> [--loadout NAME] [native args...]
+  plugdin doctor                Report Annotation drift, unannotated skills, collisions
+  plugdin run <claude|codex|grok|opencode|pi> [--loadout NAME] [native args...]
                                     Launch a Client with a Loadout applied. Everything
                                     after the client name except --loadout passes through
                                     to the native binary untouched. If --loadout is omitted
                                     and stdin/stdout are a terminal, prompts you to pick one
                                     or create a new one; non-interactively, falls back to
                                     the project's default Loadout, else "all".
-  pluggedin --help                Show this message
+  plugdin --help                Show this message
 
 "explain" and "doctor" are read-only. "adopt" only ever touches
 .claude-plugin/plugin.json files it manages itself (see --undo).`;
@@ -80,7 +80,7 @@ async function main(argv: readonly string[]): Promise<number> {
     const [clientArg, ...clientRest] = rest;
     const client = clientArg === undefined ? undefined : normalizeClientArg(clientArg);
     if (!client) {
-      console.error(`pluggedin run: first argument must be one of ${CLIENT_ARG_NAMES.join(", ")}\n\n${USAGE}`);
+      console.error(`plugdin run: first argument must be one of ${CLIENT_ARG_NAMES.join(", ")}\n\n${USAGE}`);
       return 2;
     }
     let { loadoutName, passthroughArgs } = parseRunArgs(clientRest);
@@ -104,7 +104,7 @@ async function main(argv: readonly string[]): Promise<number> {
       // above wasn't shown) is silent otherwise: nothing else prints which Loadout was
       // actually used before exec'ing the Client.
       if (noLoadoutNamed && loadoutName === undefined) {
-        console.error(`pluggedin: no --loadout given; using "${prepared.loadoutName}"`);
+        console.error(`plugdin: no --loadout given; using "${prepared.loadoutName}"`);
       }
       if (prepared.projection.warnings.length > 0) {
         console.error(`Note: ${prepared.projection.warnings.length} Component(s) could not be faithfully projected — launching anyway, left as-is:`);
@@ -126,7 +126,7 @@ async function main(argv: readonly string[]): Promise<number> {
         for (const refusal of err.projection.refusals) {
           console.error(`  ${refusal.component.kind} ${refusal.component.key}: ${refusal.reason}`);
         }
-        console.error("\nRun `pluggedin explain` to see the full picture before retrying.");
+        console.error("\nRun `plugdin explain` to see the full picture before retrying.");
         return 3;
       }
       throw err;

@@ -18,7 +18,7 @@ describe("runClientCommandToFile", () => {
   });
 
   it("reports a missing binary as unavailable, exactly as the piped variant does", async () => {
-    const result = await runClientCommandToFile("pluggedin-no-such-binary", []);
+    const result = await runClientCommandToFile("plugdin-no-such-binary", []);
     expect(result.available).toBe(false);
     if (result.available) return;
     expect(result.reason).toMatch(/not installed or not on PATH/);

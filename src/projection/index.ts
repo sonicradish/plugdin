@@ -8,7 +8,7 @@ import { projectOpenCode } from "./opencode.js";
 import { projectPi } from "./pi.js";
 import type { Activation, ClientId, Inventory, Projection, Resolution } from "../domain/types.js";
 
-/** Every Client pluggedin can project a Loadout onto, in display order. */
+/** Every Client plugdin can project a Loadout onto, in display order. */
 export const CLIENT_IDS: readonly ClientId[] = ["claude-code", "codex", "grok", "opencode", "pi"];
 
 export const CLIENT_LABELS: Readonly<Record<ClientId, string>> = {

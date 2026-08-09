@@ -1,16 +1,16 @@
 {
-  "name": "pluggedin-cli",
-  "version": "0.2.0",
+  "name": "plugdin",
+  "version": "0.3.0",
   "description": "Decides which plugins, skills, and MCP servers are active in a coding-agent session, portable across agent clients.",
   "type": "module",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/sonicradish/pluggedin.git"
+    "url": "git+https://github.com/sonicradish/plugdin.git"
   },
-  "homepage": "https://github.com/sonicradish/pluggedin#readme",
+  "homepage": "https://github.com/sonicradish/plugdin#readme",
   "bugs": {
-    "url": "https://github.com/sonicradish/pluggedin/issues"
+    "url": "https://github.com/sonicradish/plugdin/issues"
   },
   "keywords": [
     "cli",
@@ -24,7 +24,7 @@
     "skills"
   ],
   "bin": {
-    "pluggedin": "./dist/cli.js"
+    "plugdin": "./dist/cli.js"
   },
   "files": [
     "dist"

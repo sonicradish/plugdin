@@ -69,7 +69,7 @@ unprojected; reporting nothing would hide a real difference from what "off" mean
 - **Write an ephemeral `<cwd>/.grok/config.toml`** — Grok's highest-priority layer, no
   symlinks needed. Rejected: it mutates the user's working tree mid-session, so a crash
   leaves a stray config file inside a repo, possibly committed. ADR-0001's "a crashed or
-  killed pluggedin cannot leave a machine in a wrong state" applies with more force inside
+  killed plugdin cannot leave a machine in a wrong state" applies with more force inside
   a git working tree, not less.
 - **Set `HOME` to a synthesized directory** — the one lever that would work uniformly for
   any Client. Rejected for the same reason ADR-0001 rejected the config-home redirect, only

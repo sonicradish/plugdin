@@ -12,17 +12,17 @@ export class InvalidLoadoutFileError extends LoadoutConfigError {
   }
 }
 
-/** `PLUGGEDIN_HOME` lets tests (and users who want the global store elsewhere) override this. */
-export function pluggedInHome(): string {
-  return process.env.PLUGGEDIN_HOME ?? join(homedir(), ".pluggedin");
+/** `PLUGDIN_HOME` lets tests (and users who want the global store elsewhere) override this. */
+export function plugdinHome(): string {
+  return process.env.PLUGDIN_HOME ?? join(homedir(), ".plugdin");
 }
 
 export function globalLoadoutsDir(): string {
-  return join(pluggedInHome(), "loadouts");
+  return join(plugdinHome(), "loadouts");
 }
 
 export function projectLoadoutsDir(cwd: string): string {
-  return join(cwd, ".pluggedin", "loadouts");
+  return join(cwd, ".plugdin", "loadouts");
 }
 
 function parseBaseline(raw: unknown, path: string): Baseline {
@@ -90,9 +90,9 @@ interface ProjectConfig {
   readonly defaultLoadout?: string;
 }
 
-/** A project may declare a default Loadout (`.pluggedin/config.toml`); it may never force one. */
+/** A project may declare a default Loadout (`.plugdin/config.toml`); it may never force one. */
 export async function readProjectDefaultLoadout(cwd: string): Promise<string | undefined> {
-  const path = join(cwd, ".pluggedin", "config.toml");
+  const path = join(cwd, ".plugdin", "config.toml");
   if (!existsSync(path)) return undefined;
   const contents = await readFile(path, "utf8");
   const parsed = parseToml(contents) as { default_loadout?: unknown };
@@ -118,9 +118,9 @@ export const BASELINE_NONE: Loadout = {
 };
 
 /**
- * Resolves which Loadout a bare `pluggedin run <client>` (no `--loadout`) should use: the
+ * Resolves which Loadout a bare `plugdin run <client>` (no `--loadout`) should use: the
  * project's declared default if it has one, else the built-in `all` baseline (PLAN.md
- * "Fail closed, but only when asked" — not using pluggedin changes nothing, but choosing to
+ * "Fail closed, but only when asked" — not using plugdin changes nothing, but choosing to
  * use it without naming a Loadout should not silently hide everything either).
  */
 export async function resolveDefaultLoadoutName(cwd: string): Promise<string> {

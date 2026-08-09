@@ -8,7 +8,7 @@ installed via `npx skills`, and Phase 5 (`adopt`, which writes Annotations) isn'
 Procedure, once both preconditions exist:
 
 ```bash
-# 1. Annotate a real npx-skills-managed skill (via `pluggedin adopt` once it exists, or by
+# 1. Annotate a real npx-skills-managed skill (via `plugdin adopt` once it exists, or by
 #    hand: write ~/.claude/skills/<name>/.claude-plugin/plugin.json).
 cat ~/.claude/skills/<name>/.claude-plugin/plugin.json   # capture before-state
 
@@ -20,6 +20,6 @@ cat ~/.claude/skills/<name>/.claude-plugin/plugin.json   # compare to before-sta
 # or: ls ~/.claude/skills/<name>/.claude-plugin/  (missing entirely -> clobbered)
 ```
 
-If clobbered, `pluggedin doctor` (Phase 5) must detect this as drift and `adopt` must be
+If clobbered, `plugdin doctor` (Phase 5) must detect this as drift and `adopt` must be
 safe to re-run idempotently — already a stated requirement, so this spike is a
 confirmation, not a design-invalidator either way. Re-run once `adopt` exists.

@@ -49,7 +49,7 @@ export class RefusedToLaunchError extends Error {
 }
 
 /**
- * `--loadout` is the only flag pluggedin's own CLI reserves; every other token is opaque
+ * `--loadout` is the only flag plugdin's own CLI reserves; every other token is opaque
  * passthrough to the native Client (PLAN.md Phase 6: "the moment the wrapper cannot accept
  * -p or --model, people stop using it"). Order among passthrough args is preserved.
  */
@@ -90,7 +90,7 @@ export async function prepareRun(cwd: string, client: ClientId, loadoutNameArg: 
   const resolution = resolveLoadout(loadout, inventory, loadouts);
   const activation: Activation = { client, inventory, loadout: resolution };
 
-  const context = await gatherProjectionContext(await mkdtemp(join(tmpdir(), "pluggedin-run-")));
+  const context = await gatherProjectionContext(await mkdtemp(join(tmpdir(), "plugdin-run-")));
   const projection = projectFor(client, activation, context);
 
   return {
@@ -104,7 +104,7 @@ export async function prepareRun(cwd: string, client: ClientId, loadoutNameArg: 
 
 /**
  * Materializes the Projection's ephemeral config (files and config-home mirrors, if any —
- * Codex and Pi have none) and execs the native Client, replacing pluggedin's own stdio so it
+ * Codex and Pi have none) and execs the native Client, replacing plugdin's own stdio so it
  * behaves as a transparent wrapper. Refuses (throws RefusedToLaunchError) rather than launch
  * with a misrepresented Loadout — callers should run `explain` first if they want to see
  * refusals without spawning anything.

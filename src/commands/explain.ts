@@ -9,7 +9,7 @@ import type { ClientId, Inventory, Projection, Resolution } from "../domain/type
 
 export class UnknownLoadoutError extends LoadoutConfigError {
   constructor(name: string) {
-    super(`No Loadout named "${name}" (checked global and project .pluggedin/loadouts/, and the "all"/"none" built-ins)`);
+    super(`No Loadout named "${name}" (checked global and project .plugdin/loadouts/, and the "all"/"none" built-ins)`);
   }
 }
 
@@ -41,7 +41,7 @@ export async function explain(cwd: string, loadoutNameArg?: string, claudeHome?:
   if (!loadout) throw new UnknownLoadoutError(loadoutName);
 
   const resolution = resolveLoadout(loadout, inventory, loadouts);
-  const context = await gatherProjectionContext(join(tmpdir(), "pluggedin", "preview"));
+  const context = await gatherProjectionContext(join(tmpdir(), "plugdin", "preview"));
 
   return {
     loadoutName,

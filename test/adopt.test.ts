@@ -3,7 +3,7 @@ import { existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { annotationPath, isManagedByPluggedIn, readAnnotation, removeAnnotation, writeAnnotation } from "../src/adopt/annotate.js";
+import { annotationPath, isManagedByPlugdin, readAnnotation, removeAnnotation, writeAnnotation } from "../src/adopt/annotate.js";
 import { planAdopt } from "../src/adopt/plan.js";
 import { applyAdopt } from "../src/adopt/apply.js";
 import type { Component } from "../src/domain/types.js";
@@ -12,22 +12,22 @@ describe("annotate", () => {
   let skillDir: string;
 
   beforeEach(async () => {
-    skillDir = await mkdtemp(join(tmpdir(), "pluggedin-skill-"));
+    skillDir = await mkdtemp(join(tmpdir(), "plugdin-skill-"));
   });
 
   afterEach(async () => {
     await rm(skillDir, { recursive: true, force: true });
   });
 
-  it("writes a plugin.json marked as pluggedin-managed", async () => {
+  it("writes a plugin.json marked as plugdin-managed", async () => {
     await writeAnnotation(skillDir, "tdd", "Test-driven development.");
     const manifest = await readAnnotation(skillDir);
     expect(manifest).toEqual({
       name: "tdd",
       description: "Test-driven development.",
-      pluggedIn: { annotates: "tdd", tool: "pluggedin adopt" },
+      plugdin: { annotates: "tdd", tool: "plugdin adopt" },
     });
-    expect(isManagedByPluggedIn(manifest)).toBe(true);
+    expect(isManagedByPlugdin(manifest)).toBe(true);
   });
 
   it("is idempotent: writing twice produces identical bytes", async () => {
@@ -38,7 +38,7 @@ describe("annotate", () => {
     expect(first).toBe(second);
   });
 
-  it("removeAnnotation deletes a pluggedin-managed manifest", async () => {
+  it("removeAnnotation deletes a plugdin-managed manifest", async () => {
     await writeAnnotation(skillDir, "tdd", "d");
     await removeAnnotation(skillDir);
     expect(existsSync(annotationPath(skillDir))).toBe(false);
@@ -51,9 +51,9 @@ describe("annotate", () => {
     expect(existsSync(annotationPath(skillDir))).toBe(true);
   });
 
-  it("isManagedByPluggedIn is false for a foreign manifest and for no manifest", async () => {
-    expect(isManagedByPluggedIn(undefined)).toBe(false);
-    expect(isManagedByPluggedIn({ name: "x", description: "y", pluggedIn: { annotates: "x", tool: "something-else" } })).toBe(false);
+  it("isManagedByPlugdin is false for a foreign manifest and for no manifest", async () => {
+    expect(isManagedByPlugdin(undefined)).toBe(false);
+    expect(isManagedByPlugdin({ name: "x", description: "y", plugdin: { annotates: "x", tool: "something-else" } })).toBe(false);
   });
 });
 
@@ -67,9 +67,9 @@ describe("planAdopt + applyAdopt", () => {
   let dirForeign: string;
 
   beforeEach(async () => {
-    dirA = await mkdtemp(join(tmpdir(), "pluggedin-skill-a-"));
-    dirB = await mkdtemp(join(tmpdir(), "pluggedin-skill-b-"));
-    dirForeign = await mkdtemp(join(tmpdir(), "pluggedin-skill-foreign-"));
+    dirA = await mkdtemp(join(tmpdir(), "plugdin-skill-a-"));
+    dirB = await mkdtemp(join(tmpdir(), "plugdin-skill-b-"));
+    dirForeign = await mkdtemp(join(tmpdir(), "plugdin-skill-foreign-"));
     await mkdir(join(dirForeign, ".claude-plugin"), { recursive: true });
     await writeFile(join(dirForeign, ".claude-plugin", "plugin.json"), JSON.stringify({ name: "foreign" }));
   });
@@ -110,7 +110,7 @@ describe("planAdopt + applyAdopt", () => {
     expect(existsSync(annotationPath(dirA))).toBe(false);
   });
 
-  it("--undo removes a pluggedin-managed Annotation", async () => {
+  it("--undo removes a plugdin-managed Annotation", async () => {
     await writeAnnotation(dirA, "a", "d");
     const components = [skillComponent("a", dirA)];
     const plan = await planAdopt(components, { undo: true });
