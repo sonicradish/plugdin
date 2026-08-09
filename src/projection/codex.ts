@@ -22,8 +22,8 @@ function tomlString(value: string): string {
  * Turning one ON needs no override (it's already in the user's config.toml and loads by
  * default). Turning one OFF has no verified faithful mechanism — there is nothing a caller
  * can *do* about that through this tool, so unlike other gaps this one is a non-blocking
- * `warnings` entry rather than a `refusals` entry: launch proceeds and the server is simply
- * left in whatever state Codex's own config already has it (usually on).
+ * `warnings` entry rather than a `refusals` entry (ADR-0004): launch proceeds and the server
+ * is simply left in whatever state Codex's own config already has it (usually on).
  */
 export function projectCodex(activation: Activation): Projection {
   const { inventory, loadout } = activation;

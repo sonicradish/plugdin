@@ -106,9 +106,8 @@ export interface Projection {
   readonly refusals: readonly Refusal[];
   /** Components that could not be faithfully projected but launch proceeds anyway, leaving
    * the Component in whatever state the Client's own config already has it — printed as a
-   * heads-up, never blocks. Distinct from `refusals`: a `Refusal` has no way to become true no
-   * matter what the user does *through this tool*; a warning is the same gap, downgraded
-   * because the Component was already left in a reasonable state on its own. */
+   * heads-up, never blocks (ADR-0004). Distinct from `refusals`: a `Refusal` has a fix
+   * available through this tool; a warning does not, so blocking on it would only be friction. */
   readonly warnings: readonly Refusal[];
 }
 
