@@ -7,7 +7,7 @@ import { isValidLoadoutName, writeNewLoadoutFile } from "../loadout/write.js";
 import { projectClaudeCode } from "../projection/claude-code.js";
 import { projectCodex } from "../projection/codex.js";
 import type { Prompter } from "../tui/prompter.js";
-import type { Baseline, Inventory, Loadout } from "../domain/types.js";
+import type { Baseline, Component, Inventory, Loadout } from "../domain/types.js";
 
 const ALL_OPTION = "__pluggedin_all__";
 const NONE_OPTION = "__pluggedin_none__";
@@ -65,6 +65,28 @@ function describeExistingLoadout(loadout: Loadout, inventory: Inventory, loadout
   }
 }
 
+/**
+ * A short heads-up shown inline in the toggle list, when known statically from the
+ * Component itself — no need to simulate Projection per item. A Loadout is shared across
+ * both Clients, so none of these ever hide or lock the toggle: a Component that's
+ * problematic for one Client can still be freely toggled for the other with the same
+ * Loadout, so the choice stays fully in the user's hands — this only informs it.
+ */
+function componentCaveat(component: Component): string | undefined {
+  if (component.id.kind === "skill" && component.annotation !== "annotated") {
+    return "Claude Code: off needs `adopt` first";
+  }
+  if (component.id.kind === "mcp-server") {
+    if (component.clients.includes("codex")) {
+      return "Codex: can't be turned off, stays on regardless";
+    }
+    if (!component.mcp && component.clients.includes("claude-code")) {
+      return "Claude Code: can't be turned on, no launch spec captured";
+    }
+  }
+  return undefined;
+}
+
 async function promptForNewName(prompter: Prompter, existingNames: readonly string[]): Promise<string> {
   for (;;) {
     const name = await prompter.input("Name for the new Loadout");
@@ -111,11 +133,14 @@ async function createLoadoutInteractively(
   const draft: Loadout = { name, baseline, allow: [], deny: [], scope, definedAt: "<draft>" };
   const baselineResolution = resolveLoadout(draft, inventory, loadouts);
 
-  const items = inventory.components.map((c) => ({
-    key: c.id.key,
-    label: `[${c.id.kind}] ${c.id.key}`,
-    initiallyOn: baselineResolution.decisions.get(c.id.key) === true,
-  }));
+  const items = inventory.components.map((c) => {
+    const caveat = componentCaveat(c);
+    return {
+      key: c.id.key,
+      label: caveat ? `[${c.id.kind}] ${c.id.key} — ⚠ ${caveat}` : `[${c.id.kind}] ${c.id.key}`,
+      initiallyOn: baselineResolution.decisions.get(c.id.key) === true,
+    };
+  });
 
   const finalOn =
     items.length > 0

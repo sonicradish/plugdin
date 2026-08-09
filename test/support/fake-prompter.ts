@@ -12,6 +12,7 @@ export class FakePrompter implements Prompter {
   private toggleAnswers: Array<ReadonlySet<string>> = [];
   readonly notes: string[] = [];
   readonly selectPrompts: Array<{ message: string; options: readonly SelectOption[] }> = [];
+  readonly toggleListPrompts: Array<{ message: string; items: readonly ToggleItem[] }> = [];
 
   queueSelect(...answers: string[]): this {
     this.selectAnswers.push(...answers);
@@ -49,6 +50,7 @@ export class FakePrompter implements Prompter {
   }
 
   async toggleList(message: string, items: readonly ToggleItem[]): Promise<ReadonlySet<string>> {
+    this.toggleListPrompts.push({ message, items });
     const next = this.toggleAnswers.shift();
     if (next === undefined) return new Set(items.filter((i) => i.initiallyOn).map((i) => i.key));
     return next;

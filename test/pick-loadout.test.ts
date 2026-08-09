@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { FakePrompter } from "./support/fake-prompter.js";
+import { writeAnnotation } from "../src/adopt/annotate.js";
 import { projectLoadoutsDir } from "../src/loadout/store.js";
 
 const { runClientCommand } = vi.hoisted(() => ({ runClientCommand: vi.fn() }));
@@ -137,6 +138,50 @@ describe("pickOrCreateLoadout", () => {
     await pickOrCreateLoadout(cwd, prompter, claudeHome);
     const option = prompter.selectPrompts[0]?.options.find((o) => o.value === "off");
     expect(option?.label).toContain("⚠ 1 refusal");
+  });
+
+  it("labels an unannotated skill's toggle item with a Claude Code caveat", async () => {
+    await makeSkill("tdd");
+
+    const prompter = new FakePrompter().queueSelect("__pluggedin_create__").queueInput("x").queueSelect("project").queueSelect("none");
+    await pickOrCreateLoadout(cwd, prompter, claudeHome);
+
+    const item = prompter.toggleListPrompts[0]?.items.find((i) => i.key === "tdd@skills-dir");
+    expect(item?.label).toContain("⚠ Claude Code: off needs `adopt` first");
+  });
+
+  it("does not caveat an annotated skill's toggle item", async () => {
+    const dir = join(claudeHome, "skills", "tdd");
+    await mkdir(dir, { recursive: true });
+    await writeFile(join(dir, "SKILL.md"), `---\nname: tdd\ndescription: d\n---\n`);
+    await writeAnnotation(dir, "tdd", "d");
+
+    const prompter = new FakePrompter().queueSelect("__pluggedin_create__").queueInput("x").queueSelect("project").queueSelect("none");
+    await pickOrCreateLoadout(cwd, prompter, claudeHome);
+
+    const item = prompter.toggleListPrompts[0]?.items.find((i) => i.key === "tdd@skills-dir");
+    expect(item?.label).not.toContain("⚠");
+  });
+
+  it("labels an already-configured Codex MCP server's toggle item with a Codex caveat", async () => {
+    runClientCommand.mockImplementation(async (bin: string, args: readonly string[]) => {
+      if (bin === "claude") return { available: true, stdout: "[]", stderr: "" };
+      if (bin === "codex" && args.join(" ") === "plugin list --json") return { available: true, stdout: JSON.stringify({ installed: [] }), stderr: "" };
+      if (bin === "codex" && args.join(" ") === "mcp list --json") {
+        return {
+          available: true,
+          stdout: JSON.stringify([{ name: "node_repl", transport: { type: "stdio", command: "/bin/node_repl", args: [], env: {} } }]),
+          stderr: "",
+        };
+      }
+      return { available: true, stdout: "[]", stderr: "" };
+    });
+
+    const prompter = new FakePrompter().queueSelect("__pluggedin_create__").queueInput("x").queueSelect("project").queueSelect("none");
+    await pickOrCreateLoadout(cwd, prompter, claudeHome);
+
+    const item = prompter.toggleListPrompts[0]?.items.find((i) => i.label.includes("node_repl"));
+    expect(item?.label).toContain("⚠ Codex: can't be turned off, stays on regardless");
   });
 
   it("does not flag an existing Loadout in the menu when it resolves cleanly", async () => {
