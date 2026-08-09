@@ -25,20 +25,27 @@ npm error 403 Two-factor authentication or granular access token with bypass 2fa
 is required to publish packages.
 ```
 
-Enable it at npmjs.com → account **Settings** → **Two-Factor Authentication** (an authenticator
-app is the usual choice). This is a prerequisite for both publishing paths below — a granular
-token with 2FA bypass still requires the account itself to have 2FA turned on.
+Enable it at npmjs.com → account **Settings** → **Two-Factor Authentication**. npm no longer
+accepts new authenticator-app (TOTP) enrollments, so this will be a passkey or security key —
+a 1Password or iCloud passkey, Touch ID, or a hardware key like a YubiKey. It can only be
+registered from a browser.
+
+This is a prerequisite for both publishing paths below: a granular token with 2FA bypass still
+requires the account itself to have 2FA turned on.
+
+Keep the recovery codes npm issues during enrollment. They are the only fallback if the passkey
+becomes unavailable, and they are what the CLI's one-time-password prompt accepts.
 
 ### 2. First publish, by hand
 
-With 2FA enabled, publish interactively and answer the OTP prompt:
-
 ```bash
 npm login
-npm publish --access public          # prompts for a one-time code
+npm publish --access public
 ```
 
-Or pass the code directly with `npm publish --access public --otp=123456`.
+With a passkey there is no numeric code and no `--otp` flag. Both commands print a URL to
+complete the WebAuthn challenge in a browser, then continue on their own once it succeeds — so
+this has to be run somewhere with a browser available.
 
 `prepublishOnly` builds and runs the test suite first, so a broken tree can't reach the
 registry. Confirm it landed:
