@@ -1,4 +1,4 @@
-# plugged-in
+# pluggedin
 
 Decides which agent extensions are active in a coding-agent session, and makes that
 decision portable across agent clients. It selects; it does not install.

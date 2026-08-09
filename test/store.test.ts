@@ -25,15 +25,15 @@ describe("loadLoadouts", () => {
   let originalHome: string | undefined;
 
   beforeEach(async () => {
-    pluggedInHome = await mkdtemp(join(tmpdir(), "plugged-in-home-"));
-    cwd = await mkdtemp(join(tmpdir(), "plugged-in-project-"));
-    originalHome = process.env.PLUGGED_IN_HOME;
-    process.env.PLUGGED_IN_HOME = pluggedInHome;
+    pluggedInHome = await mkdtemp(join(tmpdir(), "pluggedin-home-"));
+    cwd = await mkdtemp(join(tmpdir(), "pluggedin-project-"));
+    originalHome = process.env.PLUGGEDIN_HOME;
+    process.env.PLUGGEDIN_HOME = pluggedInHome;
   });
 
   afterEach(async () => {
-    if (originalHome === undefined) delete process.env.PLUGGED_IN_HOME;
-    else process.env.PLUGGED_IN_HOME = originalHome;
+    if (originalHome === undefined) delete process.env.PLUGGEDIN_HOME;
+    else process.env.PLUGGEDIN_HOME = originalHome;
     await rm(pluggedInHome, { recursive: true, force: true });
     await rm(cwd, { recursive: true, force: true });
   });
@@ -100,7 +100,7 @@ describe("readProjectDefaultLoadout / resolveDefaultLoadoutName", () => {
   let cwd: string;
 
   beforeEach(async () => {
-    cwd = await mkdtemp(join(tmpdir(), "plugged-in-project-"));
+    cwd = await mkdtemp(join(tmpdir(), "pluggedin-project-"));
   });
 
   afterEach(async () => {
@@ -112,9 +112,9 @@ describe("readProjectDefaultLoadout / resolveDefaultLoadoutName", () => {
     expect(await resolveDefaultLoadoutName(cwd)).toBe("all");
   });
 
-  it("reads a declared default_loadout from .plugged-in/config.toml", async () => {
-    await mkdir(join(cwd, ".plugged-in"), { recursive: true });
-    await writeFile(join(cwd, ".plugged-in", "config.toml"), `default_loadout = "everyday"\n`);
+  it("reads a declared default_loadout from .pluggedin/config.toml", async () => {
+    await mkdir(join(cwd, ".pluggedin"), { recursive: true });
+    await writeFile(join(cwd, ".pluggedin", "config.toml"), `default_loadout = "everyday"\n`);
     expect(await readProjectDefaultLoadout(cwd)).toBe("everyday");
     expect(await resolveDefaultLoadoutName(cwd)).toBe("everyday");
   });

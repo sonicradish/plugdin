@@ -9,9 +9,9 @@ import { projectCodex } from "../projection/codex.js";
 import type { Prompter } from "../tui/prompter.js";
 import type { Baseline, Inventory, Loadout } from "../domain/types.js";
 
-const ALL_OPTION = "__plugged_in_all__";
-const NONE_OPTION = "__plugged_in_none__";
-const CREATE_OPTION = "__plugged_in_create__";
+const ALL_OPTION = "__pluggedin_all__";
+const NONE_OPTION = "__pluggedin_none__";
+const CREATE_OPTION = "__pluggedin_create__";
 
 export interface PickLoadoutResult {
   readonly loadoutName: string;
@@ -54,7 +54,7 @@ function describeExistingLoadout(loadout: Loadout, inventory: Inventory, loadout
   const base = `${loadout.name} (${loadout.scope})`;
   try {
     const resolution = resolveLoadout(loadout, inventory, loadoutsByName);
-    const previewWorkDir = join(tmpdir(), "plugged-in", "preview", "claude-code");
+    const previewWorkDir = join(tmpdir(), "pluggedin", "preview", "claude-code");
     const refusalCount =
       projectClaudeCode({ client: "claude-code", inventory, loadout: resolution }, previewWorkDir).refusals.length +
       projectCodex({ client: "codex", inventory, loadout: resolution }).refusals.length;
@@ -90,8 +90,8 @@ async function createLoadoutInteractively(
   const name = await promptForNewName(prompter, existingNames);
 
   const scope = (await prompter.select("Scope", [
-    { value: "project", label: "project — .plugged-in/loadouts/ (committed, shared with the team)" },
-    { value: "global", label: "global — ~/.plugged-in/loadouts/ (just you, any project)" },
+    { value: "project", label: "project — .pluggedin/loadouts/ (committed, shared with the team)" },
+    { value: "global", label: "global — ~/.pluggedin/loadouts/ (just you, any project)" },
   ])) as "project" | "global";
 
   const baselineChoice = await prompter.select("Baseline", [

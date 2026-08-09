@@ -73,7 +73,7 @@ describe("discoverClaudeCodeMcpServers", () => {
   let cwd: string;
 
   beforeEach(async () => {
-    cwd = await mkdtemp(join(tmpdir(), "plugged-in-mcp-"));
+    cwd = await mkdtemp(join(tmpdir(), "pluggedin-mcp-"));
   });
 
   afterEach(async () => {

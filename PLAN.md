@@ -1,4 +1,4 @@
-# plugged-in — build plan
+# pluggedin — build plan
 
 A CLI that decides which plugins, skills, and MCP servers appear to a coding agent in a given
 session, and makes that decision reusable and portable across agent clients.
@@ -9,7 +9,7 @@ Vocabulary in [CONTEXT.md](./CONTEXT.md). Settled architecture in [docs/adr/](./
 
 Agent Plugins v1 standardizes how extensions are *packaged* and explicitly leaves
 "discovery, installation, permissions, and UX" to each client. So a plugin is portable and a
-decision about that plugin is not. plugged-in supplies the missing portable state.
+decision about that plugin is not. pluggedin supplies the missing portable state.
 
 The goal is **context optimization**: a Component that is off must not reach the model's
 context at all. Blocking a Component at the permission layer does not count — verified: a
@@ -37,7 +37,7 @@ Three mechanisms were documented one way and behaved another. Assume the next on
 
 ## Architecture
 
-- **Selection, not installation.** `npx plugins` and `npx skills` install; plugged-in reads
+- **Selection, not installation.** `npx plugins` and `npx skills` install; pluggedin reads
   the resulting Inventory and decides what is active. ADR-0002.
 - **Ephemeral Projection.** Each Activation generates throwaway config passed through flags
   the client already supports. Nothing the user owns is mutated to express activation, so a
@@ -45,7 +45,7 @@ Three mechanisms were documented one way and behaved another. Assume the next on
 - **Annotation only where required.** Claude Code needs a `.claude-plugin/plugin.json` shim
   beside each skill; Codex does not. One-time, additive, reversible. ADR-0003.
 - **Fail closed, but only when asked.** A new Loadout starts at baseline `none`. Running the
-  wrapper without naming a Loadout uses the project default, else `all`. Not using plugged-in
+  wrapper without naming a Loadout uses the project default, else `all`. Not using pluggedin
   at all changes nothing — native behavior, always.
 
 ## Phase 0 — Spikes
@@ -73,7 +73,7 @@ what the user asked for and what the agent sees; without it, bugs are unfalsifia
 
 ## Phase 2 — Loadout model
 
-TOML at `~/.plugged-in/loadouts/<name>.toml` and `<repo>/.plugged-in/loadouts/<name>.toml`,
+TOML at `~/.pluggedin/loadouts/<name>.toml` and `<repo>/.pluggedin/loadouts/<name>.toml`,
 committed. Project overrides global **by name**, never merges — merged allow/deny sets across
 scopes cannot be debugged. A project may declare a default Loadout; it may never force one.
 
@@ -106,7 +106,7 @@ identity collisions.
 
 ## Phase 6 — `run`
 
-`plugged-in run <client> [--loadout X] [native args…]`. Argument passthrough is a hard
+`pluggedin run <client> [--loadout X] [native args…]`. Argument passthrough is a hard
 requirement from day one: reserve `--loadout` and treat everything else as opaque. The moment
 the wrapper cannot accept `-p` or `--model`, people stop using it. TUI picker when no Loadout
 is named. Optional shell aliases shipped as an opt-in snippet.

@@ -1,4 +1,4 @@
-# Example project Loadout for working on plugged-in itself.
+# Example project Loadout for working on pluggedin itself.
 baseline = "none"
 allow = [
   "tdd@skills-dir",

@@ -35,7 +35,7 @@ export interface DoctorReport {
 /**
  * Reports Annotation drift, unannotated skills, and identity collisions (PLAN.md Phase 5).
  * Drift specifically covers `npx skills update` (or a rename) clobbering or outdating an
- * Annotation plugged-in wrote — spikes/s4-annotation-survival.md flagged this as something
+ * Annotation pluggedin wrote — spikes/s4-annotation-survival.md flagged this as something
  * `doctor` must catch since it can't yet be spiked live.
  */
 export async function doctor(cwd: string = process.cwd(), claudeHome: string = join(homedir(), ".claude")): Promise<DoctorReport> {

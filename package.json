@@ -21,7 +21,7 @@
     "skills"
   ],
   "bin": {
-    "plugged-in": "./dist/cli.js"
+    "pluggedin": "./dist/cli.js"
   },
   "files": [
     "dist"

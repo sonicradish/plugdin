@@ -39,7 +39,7 @@ export function projectClaudeCode(activation: Activation, workDir: string): Proj
       } else if (!decision) {
         // Loose, unannotated skills have no filter on Claude Code (ADR-0001) — turning one
         // off is a request Projection cannot satisfy, not something to silently ignore.
-        refusals.push({ component: component.id, reason: "skill is not Annotated; run `plugged-in adopt` before it can be turned off for Claude Code" });
+        refusals.push({ component: component.id, reason: "skill is not Annotated; run `pluggedin adopt` before it can be turned off for Claude Code" });
       }
       continue;
     }

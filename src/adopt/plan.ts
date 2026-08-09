@@ -10,7 +10,7 @@ export interface AdoptAction {
 
 /**
  * Plans Annotation writes/removals for every loose skill (Claude Code is the only Client
- * that needs this — ADR-0003). Never plans touching a foreign (non-plugged-in-managed)
+ * that needs this — ADR-0003). Never plans touching a foreign (non-pluggedin-managed)
  * `.claude-plugin/plugin.json`, forward or in reverse.
  */
 export async function planAdopt(components: readonly Component[], opts: { readonly undo: boolean }): Promise<AdoptAction[]> {

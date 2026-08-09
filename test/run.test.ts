@@ -65,7 +65,7 @@ describe("prepareRun", () => {
   let cwd: string;
 
   beforeEach(async () => {
-    cwd = await mkdtemp(join(tmpdir(), "plugged-in-run-cwd-"));
+    cwd = await mkdtemp(join(tmpdir(), "pluggedin-run-cwd-"));
     runClientCommand.mockImplementation(async (bin: string, args: readonly string[]) => {
       if (bin === "claude") return { available: true, stdout: "[]", stderr: "" };
       if (bin === "codex" && args.join(" ") === "plugin list --json") return { available: true, stdout: JSON.stringify({ installed: [] }), stderr: "" };
@@ -90,7 +90,7 @@ describe("prepareRun", () => {
 
   it("computes claude-code settings/mcp-config file paths under a fresh temp dir", async () => {
     const prepared = await prepareRun(cwd, "claude-code", "all", []);
-    expect(prepared.projection.generatedFiles.map((f) => f.path).every((p) => p.includes("plugged-in-run-"))).toBe(true);
+    expect(prepared.projection.generatedFiles.map((f) => f.path).every((p) => p.includes("pluggedin-run-"))).toBe(true);
   });
 });
 

@@ -12,20 +12,20 @@ describe("annotate", () => {
   let skillDir: string;
 
   beforeEach(async () => {
-    skillDir = await mkdtemp(join(tmpdir(), "plugged-in-skill-"));
+    skillDir = await mkdtemp(join(tmpdir(), "pluggedin-skill-"));
   });
 
   afterEach(async () => {
     await rm(skillDir, { recursive: true, force: true });
   });
 
-  it("writes a plugin.json marked as plugged-in-managed", async () => {
+  it("writes a plugin.json marked as pluggedin-managed", async () => {
     await writeAnnotation(skillDir, "tdd", "Test-driven development.");
     const manifest = await readAnnotation(skillDir);
     expect(manifest).toEqual({
       name: "tdd",
       description: "Test-driven development.",
-      pluggedIn: { annotates: "tdd", tool: "plugged-in adopt" },
+      pluggedIn: { annotates: "tdd", tool: "pluggedin adopt" },
     });
     expect(isManagedByPluggedIn(manifest)).toBe(true);
   });
@@ -38,7 +38,7 @@ describe("annotate", () => {
     expect(first).toBe(second);
   });
 
-  it("removeAnnotation deletes a plugged-in-managed manifest", async () => {
+  it("removeAnnotation deletes a pluggedin-managed manifest", async () => {
     await writeAnnotation(skillDir, "tdd", "d");
     await removeAnnotation(skillDir);
     expect(existsSync(annotationPath(skillDir))).toBe(false);
@@ -67,9 +67,9 @@ describe("planAdopt + applyAdopt", () => {
   let dirForeign: string;
 
   beforeEach(async () => {
-    dirA = await mkdtemp(join(tmpdir(), "plugged-in-skill-a-"));
-    dirB = await mkdtemp(join(tmpdir(), "plugged-in-skill-b-"));
-    dirForeign = await mkdtemp(join(tmpdir(), "plugged-in-skill-foreign-"));
+    dirA = await mkdtemp(join(tmpdir(), "pluggedin-skill-a-"));
+    dirB = await mkdtemp(join(tmpdir(), "pluggedin-skill-b-"));
+    dirForeign = await mkdtemp(join(tmpdir(), "pluggedin-skill-foreign-"));
     await mkdir(join(dirForeign, ".claude-plugin"), { recursive: true });
     await writeFile(join(dirForeign, ".claude-plugin", "plugin.json"), JSON.stringify({ name: "foreign" }));
   });
@@ -110,7 +110,7 @@ describe("planAdopt + applyAdopt", () => {
     expect(existsSync(annotationPath(dirA))).toBe(false);
   });
 
-  it("--undo removes a plugged-in-managed Annotation", async () => {
+  it("--undo removes a pluggedin-managed Annotation", async () => {
     await writeAnnotation(dirA, "a", "d");
     const components = [skillComponent("a", dirA)];
     const plan = await planAdopt(components, { undo: true });

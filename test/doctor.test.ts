@@ -20,11 +20,11 @@ describe("doctor", () => {
   let originalPluggedInHome: string | undefined;
 
   beforeEach(async () => {
-    cwd = await mkdtemp(join(tmpdir(), "plugged-in-cwd-"));
-    claudeHome = await mkdtemp(join(tmpdir(), "plugged-in-claude-home-"));
-    pluggedInHome = await mkdtemp(join(tmpdir(), "plugged-in-home-"));
-    originalPluggedInHome = process.env.PLUGGED_IN_HOME;
-    process.env.PLUGGED_IN_HOME = pluggedInHome; // isolate from the real ~/.plugged-in
+    cwd = await mkdtemp(join(tmpdir(), "pluggedin-cwd-"));
+    claudeHome = await mkdtemp(join(tmpdir(), "pluggedin-claude-home-"));
+    pluggedInHome = await mkdtemp(join(tmpdir(), "pluggedin-home-"));
+    originalPluggedInHome = process.env.PLUGGEDIN_HOME;
+    process.env.PLUGGEDIN_HOME = pluggedInHome; // isolate from the real ~/.pluggedin
     runClientCommand.mockImplementation(async (bin: string, args: readonly string[]) => {
       if (bin === "claude") return { available: true, stdout: "[]", stderr: "" };
       if (bin === "codex" && args.join(" ") === "plugin list --json") return { available: true, stdout: JSON.stringify({ installed: [] }), stderr: "" };
@@ -33,8 +33,8 @@ describe("doctor", () => {
   });
 
   afterEach(async () => {
-    if (originalPluggedInHome === undefined) delete process.env.PLUGGED_IN_HOME;
-    else process.env.PLUGGED_IN_HOME = originalPluggedInHome;
+    if (originalPluggedInHome === undefined) delete process.env.PLUGGEDIN_HOME;
+    else process.env.PLUGGEDIN_HOME = originalPluggedInHome;
     await rm(cwd, { recursive: true, force: true });
     await rm(claudeHome, { recursive: true, force: true });
     await rm(pluggedInHome, { recursive: true, force: true });
@@ -73,7 +73,7 @@ describe("doctor", () => {
     expect(report.driftedAnnotations[0]?.component.name).toBe("tdd");
   });
 
-  it("flags a foreign (non-plugged-in) plugin.json without touching it", async () => {
+  it("flags a foreign (non-pluggedin) plugin.json without touching it", async () => {
     const dir = await makeSkill(join(claudeHome, "skills"), "tdd");
     await mkdir(join(dir, ".claude-plugin"), { recursive: true });
     await writeFile(join(dir, ".claude-plugin", "plugin.json"), JSON.stringify({ name: "hand-authored" }));

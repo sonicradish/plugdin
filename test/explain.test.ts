@@ -18,8 +18,8 @@ describe("explain", () => {
   let claudeHome: string;
 
   beforeEach(async () => {
-    cwd = await mkdtemp(join(tmpdir(), "plugged-in-cwd-"));
-    claudeHome = await mkdtemp(join(tmpdir(), "plugged-in-claude-home-"));
+    cwd = await mkdtemp(join(tmpdir(), "pluggedin-cwd-"));
+    claudeHome = await mkdtemp(join(tmpdir(), "pluggedin-claude-home-"));
     runClientCommand.mockImplementation(async (bin: string, args: readonly string[]) => {
       if (bin === "claude" && args.join(" ") === "plugin list --json") return { available: true, stdout: "[]", stderr: "" };
       if (bin === "codex" && args.join(" ") === "plugin list --json") return { available: true, stdout: JSON.stringify({ installed: [] }), stderr: "" };
@@ -79,14 +79,14 @@ describe("explain", () => {
     await explain(cwd, undefined, claudeHome);
     const after = await import("node:fs/promises").then((fs) => fs.readdir(tmpdir()));
     // Nothing named after our preview dir should have been created.
-    expect(after.filter((n) => n === "plugged-in").length).toBe(before.filter((n) => n === "plugged-in").length);
+    expect(after.filter((n) => n === "pluggedin").length).toBe(before.filter((n) => n === "pluggedin").length);
   });
 });
 
 describe("formatExplain", () => {
   it("renders REFUSED entries and the run-would-refuse footer when any Projection has refusals", async () => {
-    const cwd = await mkdtemp(join(tmpdir(), "plugged-in-cwd-"));
-    const claudeHome = await mkdtemp(join(tmpdir(), "plugged-in-claude-home-"));
+    const cwd = await mkdtemp(join(tmpdir(), "pluggedin-cwd-"));
+    const claudeHome = await mkdtemp(join(tmpdir(), "pluggedin-claude-home-"));
     try {
       await mkdir(join(claudeHome, "skills", "tdd"), { recursive: true });
       await writeFile(join(claudeHome, "skills", "tdd", "SKILL.md"), `---\nname: tdd\ndescription: d\n---\n`);
@@ -99,7 +99,7 @@ describe("formatExplain", () => {
       const result = await explain(cwd, "none", claudeHome);
       const text = formatExplain(result);
       expect(text).toContain("REFUSED");
-      expect(text).toContain("plugged-in run would refuse to launch");
+      expect(text).toContain("pluggedin run would refuse to launch");
     } finally {
       await rm(cwd, { recursive: true, force: true });
       await rm(claudeHome, { recursive: true, force: true });
@@ -107,8 +107,8 @@ describe("formatExplain", () => {
   });
 
   it("labels each Component 'explicit' or 'baseline default' to match how it ended up on/off", async () => {
-    const cwd = await mkdtemp(join(tmpdir(), "plugged-in-cwd-"));
-    const claudeHome = await mkdtemp(join(tmpdir(), "plugged-in-claude-home-"));
+    const cwd = await mkdtemp(join(tmpdir(), "pluggedin-cwd-"));
+    const claudeHome = await mkdtemp(join(tmpdir(), "pluggedin-claude-home-"));
     try {
       await mkdir(join(claudeHome, "skills", "tdd"), { recursive: true });
       await writeFile(join(claudeHome, "skills", "tdd", "SKILL.md"), `---\nname: tdd\ndescription: d\n---\n`);
@@ -130,8 +130,8 @@ describe("formatExplain", () => {
   });
 
   it("defaults to plain text with no ANSI codes when no options are given", async () => {
-    const cwd = await mkdtemp(join(tmpdir(), "plugged-in-cwd-"));
-    const claudeHome = await mkdtemp(join(tmpdir(), "plugged-in-claude-home-"));
+    const cwd = await mkdtemp(join(tmpdir(), "pluggedin-cwd-"));
+    const claudeHome = await mkdtemp(join(tmpdir(), "pluggedin-claude-home-"));
     try {
       runClientCommand.mockImplementation(async () => ({ available: true, stdout: "[]", stderr: "" }));
       const result = await explain(cwd, undefined, claudeHome);
@@ -144,8 +144,8 @@ describe("formatExplain", () => {
   });
 
   it("emits ANSI codes around status/section text when color is enabled, without corrupting the text itself", async () => {
-    const cwd = await mkdtemp(join(tmpdir(), "plugged-in-cwd-"));
-    const claudeHome = await mkdtemp(join(tmpdir(), "plugged-in-claude-home-"));
+    const cwd = await mkdtemp(join(tmpdir(), "pluggedin-cwd-"));
+    const claudeHome = await mkdtemp(join(tmpdir(), "pluggedin-claude-home-"));
     try {
       await mkdir(join(claudeHome, "skills", "tdd"), { recursive: true });
       await writeFile(join(claudeHome, "skills", "tdd", "SKILL.md"), `---\nname: tdd\ndescription: d\n---\n`);

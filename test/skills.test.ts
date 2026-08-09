@@ -34,7 +34,7 @@ describe("discoverLooseSkills + isAnnotated", () => {
   let root: string;
 
   beforeEach(async () => {
-    root = await mkdtemp(join(tmpdir(), "plugged-in-skills-"));
+    root = await mkdtemp(join(tmpdir(), "pluggedin-skills-"));
   });
 
   afterEach(async () => {

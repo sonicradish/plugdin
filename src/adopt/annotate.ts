@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
-export const ANNOTATION_TOOL_MARKER = "plugged-in adopt";
+export const ANNOTATION_TOOL_MARKER = "pluggedin adopt";
 
 export interface AnnotationManifest {
   readonly name: string;
@@ -26,7 +26,7 @@ export async function readAnnotation(skillDir: string): Promise<AnnotationManife
   }
 }
 
-/** True only for Annotations plugged-in itself wrote — `adopt --undo` and `doctor` must
+/** True only for Annotations pluggedin itself wrote — `adopt --undo` and `doctor` must
  * never touch a hand-authored `.claude-plugin/plugin.json` that happens to sit beside a skill. */
 export function isManagedByPluggedIn(manifest: AnnotationManifest | undefined): boolean {
   return manifest?.pluggedIn?.tool === ANNOTATION_TOOL_MARKER;
@@ -44,7 +44,7 @@ export async function writeAnnotation(skillDir: string, name: string, descriptio
   await writeFile(path, JSON.stringify(manifest, null, 2) + "\n", "utf8");
 }
 
-/** Removes a plugged-in-managed Annotation. Refuses to remove a foreign one. */
+/** Removes a pluggedin-managed Annotation. Refuses to remove a foreign one. */
 export async function removeAnnotation(skillDir: string): Promise<void> {
   const manifest = await readAnnotation(skillDir);
   if (!isManagedByPluggedIn(manifest)) return;

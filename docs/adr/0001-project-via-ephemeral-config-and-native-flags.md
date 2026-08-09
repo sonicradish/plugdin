@@ -2,7 +2,7 @@
 
 Activation is session-scoped, so Projection generates throwaway configuration for a single
 launch and passes it to the Client through flags it already supports — never by mutating
-the user's real configuration directories. A crashed or killed plugged-in therefore cannot
+the user's real configuration directories. A crashed or killed pluggedin therefore cannot
 leave a machine in a wrong state, and two terminals can run different Loadouts at once.
 
 ## Considered Options

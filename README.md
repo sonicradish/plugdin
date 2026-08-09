@@ -1,4 +1,4 @@
-# plugged-in
+# pluggedin
 
 Decides which plugins, skills, and MCP servers appear to a coding agent in a given session,
 and makes that decision reusable and portable across agent clients (Claude Code, Codex).
@@ -23,10 +23,10 @@ npm run build     # compiles src/ -> dist/, which package.json's bin points at
 ## Usage summary
 
 ```bash
-plugged-in explain [loadout]                        # read-only: preview a Loadout, no I/O
-plugged-in doctor                                    # read-only: Annotation drift, collisions
-plugged-in adopt [--dry-run] [--undo]                 # write/remove Claude Code Annotations
-plugged-in run <claude-code|codex> [--loadout X] [native args...]
+pluggedin explain [loadout]                        # read-only: preview a Loadout, no I/O
+pluggedin doctor                                    # read-only: Annotation drift, collisions
+pluggedin adopt [--dry-run] [--undo]                 # write/remove Claude Code Annotations
+pluggedin run <claude-code|codex> [--loadout X] [native args...]
                                                       # launches with --loadout omitted:
                                                       #   TTY  -> interactive picker/creator
                                                       #   else -> project default, else "all"
@@ -39,8 +39,8 @@ rebuilding:
 npx tsx src/cli.ts explain
 ```
 
-A Loadout is a TOML file under `~/.plugged-in/loadouts/<name>.toml` (global) or
-`.plugged-in/loadouts/<name>.toml` (project — see `.plugged-in/loadouts/dev.toml` in this
+A Loadout is a TOML file under `~/.pluggedin/loadouts/<name>.toml` (global) or
+`.pluggedin/loadouts/<name>.toml` (project — see `.pluggedin/loadouts/dev.toml` in this
 repo for a real example). Project Loadouts override global ones by name, never merge. See
 [docs/usage.md](./docs/usage.md#creating-a-loadout) for the full format and the interactive
 alternative.

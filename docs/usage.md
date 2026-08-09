@@ -17,10 +17,10 @@ During development you can skip the build step and run the TypeScript directly:
 npx tsx src/cli.ts <command>
 ```
 
-Every example below uses `plugged-in <command>`; substitute `npx tsx src/cli.ts <command>` if
+Every example below uses `pluggedin <command>`; substitute `npx tsx src/cli.ts <command>` if
 you haven't built.
 
-## `plugged-in explain [loadout]`
+## `pluggedin explain [loadout]`
 
 Read-only. Resolves a Loadout against the live Inventory and prints, for **both** Clients:
 every discovered Component and whether it's on or off, the exact native launch args
@@ -28,9 +28,9 @@ Projection would produce, the exact generated config file contents, and any refu
 nothing to disk and launches nothing.
 
 ```bash
-plugged-in explain              # uses the project default Loadout, else "all"
-plugged-in explain dev          # explicitly name a Loadout
-plugged-in explain none         # the built-in "everything off" baseline
+pluggedin explain              # uses the project default Loadout, else "all"
+pluggedin explain dev          # explicitly name a Loadout
+pluggedin explain none         # the built-in "everything off" baseline
 ```
 
 Exit code: `0` if nothing was refused, `1` if at least one Component couldn't be faithfully
@@ -47,41 +47,41 @@ Component's state; `(baseline default)` means it's just falling through to the c
 terminal `all`/`none` untouched. This is the fast way to check "did my `allow`/`deny` list
 actually do what I meant," instead of eyeballing the full roster against the TOML by hand.
 
-## `plugged-in doctor`
+## `pluggedin doctor`
 
 Read-only. Reports:
 
 - **Unannotated skills** — loose skills Claude Code can't filter yet (no `.claude-plugin/plugin.json` beside them).
-- **Drifted Annotations** — an Annotation plugged-in wrote whose `name` no longer matches the skill's current name (e.g. after a rename, or `npx skills update` touching the skill).
-- **Foreign Annotations** — a `.claude-plugin/plugin.json` that exists but wasn't written by plugged-in. Reported, never modified.
+- **Drifted Annotations** — an Annotation pluggedin wrote whose `name` no longer matches the skill's current name (e.g. after a rename, or `npx skills update` touching the skill).
+- **Foreign Annotations** — a `.claude-plugin/plugin.json` that exists but wasn't written by pluggedin. Reported, never modified.
 - **Identity collisions** — the same skill name found under both the global and project skill roots.
 - **Dangling Loadout keys** — an `allow`/`deny` entry in any known Loadout that matches no Component in the *current* Inventory (almost always a typo, but can also mean "not installed here" for a portable global Loadout — the report can't tell those apart).
 
 ```bash
-plugged-in doctor
+pluggedin doctor
 ```
 
 Exit code: `0` if clean, `1` if anything above was found, `2` if a Loadout file itself fails to
 parse (same "print a message, not a stack trace" behavior as `explain`).
 
-## `plugged-in adopt [--dry-run] [--undo]`
+## `pluggedin adopt [--dry-run] [--undo]`
 
 Writes (or removes) the Annotations `doctor` says are missing, for every discovered skill.
 
 ```bash
-plugged-in adopt --dry-run   # show what would change, write nothing
-plugged-in adopt             # actually write .claude-plugin/plugin.json beside each skill
-plugged-in adopt --undo      # remove Annotations plugged-in wrote (idempotent, safe to re-run)
+pluggedin adopt --dry-run   # show what would change, write nothing
+pluggedin adopt             # actually write .claude-plugin/plugin.json beside each skill
+pluggedin adopt --undo      # remove Annotations pluggedin wrote (idempotent, safe to re-run)
 ```
 
 Guarantees:
 - **Idempotent.** Running it twice in a row does nothing the second time (`already-annotated`).
-- **Never touches a foreign Annotation**, forward or in reverse — if a `.claude-plugin/plugin.json` exists and wasn't written by plugged-in (no `pluggedIn` marker inside it), it's left alone and reported as skipped.
+- **Never touches a foreign Annotation**, forward or in reverse — if a `.claude-plugin/plugin.json` exists and wasn't written by pluggedin (no `pluggedIn` marker inside it), it's left alone and reported as skipped.
 - **`--undo` only removes what it wrote.** It reads the marker before deleting anything.
 
 Exit code: always `0` (it reports skips rather than failing on them).
 
-## `plugged-in run <claude-code|codex> [--loadout NAME] [native args...]`
+## `pluggedin run <claude-code|codex> [--loadout NAME] [native args...]`
 
 Resolves a Loadout, computes its Projection, and — if nothing was refused — execs the real
 Client binary (`claude` or `codex`) with the Projection's args prepended to whatever you
@@ -89,9 +89,9 @@ passed after the client name. `--loadout` is the **only** flag this wrapper rese
 everything else passes through untouched, in the order you gave it:
 
 ```bash
-plugged-in run codex --loadout dev
-plugged-in run claude-code --loadout dev -p "summarize this repo"
-plugged-in run codex -p "hi" --loadout dev --model gpt-5.5   # --loadout can go anywhere
+pluggedin run codex --loadout dev
+pluggedin run claude-code --loadout dev -p "summarize this repo"
+pluggedin run codex -p "hi" --loadout dev --model gpt-5.5   # --loadout can go anywhere
 ```
 
 If a Projection has refusals, `run` prints them (same message `explain` would show) and exits
@@ -105,16 +105,16 @@ code is whatever the Client itself exited with.
 
 - **Interactively** (both stdin and stdout are a real terminal): shows a picker — see below.
 - **Non-interactively** (piped, scripted, CI): uses the project's default Loadout
-  (`.plugged-in/config.toml`'s `default_loadout`), or the built-in `all` baseline if the
+  (`.pluggedin/config.toml`'s `default_loadout`), or the built-in `all` baseline if the
   project declares none. Nothing prompts, nothing hangs waiting for input that isn't coming —
-  but it isn't silent either: `plugged-in: no --loadout given; using "<name>"` goes to stderr
+  but it isn't silent either: `pluggedin: no --loadout given; using "<name>"` goes to stderr
   before the Client launches, so a script's log always shows which Loadout actually ran.
 
 ## Creating a Loadout
 
 ### Interactively (the picker)
 
-Run `plugged-in run <client>` with no `--loadout`, in a real terminal. Every choice is a
+Run `pluggedin run <client>` with no `--loadout`, in a real terminal. Every choice is a
 real arrow-key menu (↑/↓ to move, Enter to confirm) — nothing to type except the name and,
 in the toggle step, Space to flip an item:
 
@@ -137,8 +137,8 @@ Move down to "Create a new Loadout..." and press Enter:
 ```
 ? Name for the new Loadout › my-loadout
 ? Scope …
-❯ project — .plugged-in/loadouts/ (committed, shared with the team)
-  global — ~/.plugged-in/loadouts/ (just you, any project)
+❯ project — .pluggedin/loadouts/ (committed, shared with the team)
+  global — ~/.pluggedin/loadouts/ (just you, any project)
 ? Baseline …
   all — start with everything on, then deny what you don't want
 ❯ none — start with everything off, then allow what you want
@@ -166,8 +166,8 @@ A Loadout is a TOML file — nothing more. The filename (minus `.toml`) is its n
 `name` field inside.
 
 **Where:**
-- `~/.plugged-in/loadouts/<name>.toml` — global, available in every project.
-- `<project>/.plugged-in/loadouts/<name>.toml` — project-scoped, meant to be committed. A
+- `~/.pluggedin/loadouts/<name>.toml` — global, available in every project.
+- `<project>/.pluggedin/loadouts/<name>.toml` — project-scoped, meant to be committed. A
   project file with the same name as a global one **replaces it outright** — they never
   merge, on purpose (a merged allow/deny set across scopes can't be debugged by reading one
   file).
@@ -184,19 +184,19 @@ deny = []
 - Any string other than `"all"`/`"none"` is treated as a reference to another Loadout by
   name; chains resolve recursively and a cycle is a hard error.
 - Listing the same key in both `allow` and `deny` is a hard error, not a silent tiebreak.
-- Finding the right keys: run `plugged-in explain` or `plugged-in doctor` first — every
+- Finding the right keys: run `pluggedin explain` or `pluggedin doctor` first — every
   discovered Component's exact key is printed there. Formats: `<name>@<marketplace>` for
   plugins and Annotated skills, `<name>@skills-dir` for any loose skill, and a
   `<binary-basename>-<hash>` fingerprint for MCP servers.
 
-**Always verify a hand-written file** with `plugged-in explain <name>` before trusting it —
+**Always verify a hand-written file** with `pluggedin explain <name>` before trusting it —
 `doctor` also flags any `allow`/`deny` key that doesn't match a real Component (see above),
 which is the most common way a hand-written file goes wrong.
 
 ### Project default
 
 ```toml
-# <project>/.plugged-in/config.toml
+# <project>/.pluggedin/config.toml
 default_loadout = "dev"
 ```
 
@@ -207,9 +207,9 @@ take priority.
 ## Worked example
 
 ```bash
-plugged-in doctor                      # see what's unannotated
-plugged-in adopt --dry-run             # preview what adopt would do about it
-plugged-in adopt                       # write the Annotations for real
-plugged-in explain dev                 # confirm the "dev" Loadout resolves the way you expect
-plugged-in run claude-code --loadout dev -p "what does this repo do?"
+pluggedin doctor                      # see what's unannotated
+pluggedin adopt --dry-run             # preview what adopt would do about it
+pluggedin adopt                       # write the Annotations for real
+pluggedin explain dev                 # confirm the "dev" Loadout resolves the way you expect
+pluggedin run claude-code --loadout dev -p "what does this repo do?"
 ```

@@ -10,15 +10,15 @@ export function formatDoctor(report: DoctorReport): string {
   }
 
   lines.push(`Unannotated skills: ${report.unannotatedSkills.length}`);
-  for (const c of report.unannotatedSkills) lines.push(`  ${c.id.key} — run \`plugged-in adopt\` to make it addressable on Claude Code`);
+  for (const c of report.unannotatedSkills) lines.push(`  ${c.id.key} — run \`pluggedin adopt\` to make it addressable on Claude Code`);
 
   lines.push(`Drifted Annotations: ${report.driftedAnnotations.length}`);
   for (const d of report.driftedAnnotations) {
-    lines.push(`  ${d.component.id.key} — manifest says "${d.manifestName}", skill is now "${d.component.name}"; re-run \`plugged-in adopt\``);
+    lines.push(`  ${d.component.id.key} — manifest says "${d.manifestName}", skill is now "${d.component.name}"; re-run \`pluggedin adopt\``);
   }
 
   lines.push(`Foreign Annotations (left alone): ${report.foreignAnnotations.length}`);
-  for (const c of report.foreignAnnotations) lines.push(`  ${c.id.key} — has a plugin.json plugged-in did not write`);
+  for (const c of report.foreignAnnotations) lines.push(`  ${c.id.key} — has a plugin.json pluggedin did not write`);
 
   lines.push(`Identity collisions: ${report.collisions.length}`);
   for (const c of report.collisions) lines.push(`  ${c.key} found at multiple paths: ${c.paths.join(", ")}`);

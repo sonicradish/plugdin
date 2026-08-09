@@ -10,7 +10,7 @@ import type { Activation, Inventory, Projection, Resolution } from "../domain/ty
 
 export class UnknownLoadoutError extends LoadoutConfigError {
   constructor(name: string) {
-    super(`No Loadout named "${name}" (checked global and project .plugged-in/loadouts/, and the "all"/"none" built-ins)`);
+    super(`No Loadout named "${name}" (checked global and project .pluggedin/loadouts/, and the "all"/"none" built-ins)`);
   }
 }
 
@@ -45,7 +45,7 @@ export async function explain(cwd: string, loadoutNameArg?: string, claudeHome?:
   if (!loadout) throw new UnknownLoadoutError(loadoutName);
 
   const resolution = resolveLoadout(loadout, inventory, loadouts);
-  const previewWorkDir = join(tmpdir(), "plugged-in", "preview", "claude-code");
+  const previewWorkDir = join(tmpdir(), "pluggedin", "preview", "claude-code");
 
   const claudeCodeActivation: Activation = { client: "claude-code", inventory, loadout: resolution };
   const codexActivation: Activation = { client: "codex", inventory, loadout: resolution };

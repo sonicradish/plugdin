@@ -1,4 +1,4 @@
-# How plugged-in works
+# How pluggedin works
 
 This is the "how it fits together" doc. For *why* it's built this way, see
 [../docs/adr/](./adr/). For the exact meaning of each term, see
@@ -8,7 +8,7 @@ for a quick refresher below.
 ## The problem, in one sentence
 
 Agent Plugins v1 standardizes how a plugin is *packaged*; it leaves "which of my installed
-extensions is active in this particular session" entirely to each client. plugged-in supplies
+extensions is active in this particular session" entirely to each client. pluggedin supplies
 that missing, portable decision.
 
 ## Vocabulary refresher
@@ -95,16 +95,16 @@ was run and when. Both are fast-moving vendor CLIs; if behavior seems to have dr
 
 ## Where a decision lives, on disk
 
-- **A Loadout** is a TOML file — nothing else. `~/.plugged-in/loadouts/<name>.toml` (global)
-  or `<project>/.plugged-in/loadouts/<name>.toml` (project). Same name in both places → the
+- **A Loadout** is a TOML file — nothing else. `~/.pluggedin/loadouts/<name>.toml` (global)
+  or `<project>/.pluggedin/loadouts/<name>.toml` (project). Same name in both places → the
   project one wins outright; they never merge.
 - **A project's default Loadout** (used when `run` is invoked with no `--loadout` and no one
-  around to ask) is one line in `<project>/.plugged-in/config.toml`: `default_loadout = "x"`.
+  around to ask) is one line in `<project>/.pluggedin/config.toml`: `default_loadout = "x"`.
   A project can suggest a default; it can't force one — `all` is the fallback if it declares
   nothing.
 - **An Annotation** lives inside the skill's own directory,
   `<skill>/.claude-plugin/plugin.json`, tagged with a `pluggedIn` marker so `adopt`/`doctor`
-  can tell a plugged-in-managed Annotation from one a human or another tool wrote by hand —
+  can tell a pluggedin-managed Annotation from one a human or another tool wrote by hand —
   the latter is never touched, in either direction.
 - **Nothing else is persistent.** Projection's generated files live under a fresh
   `os.tmpdir()` directory per `run` invocation and are never reused across sessions.

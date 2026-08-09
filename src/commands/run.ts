@@ -32,7 +32,7 @@ export class RefusedToLaunchError extends Error {
 }
 
 /**
- * `--loadout` is the only flag plugged-in's own CLI reserves; every other token is opaque
+ * `--loadout` is the only flag pluggedin's own CLI reserves; every other token is opaque
  * passthrough to the native Client (PLAN.md Phase 6: "the moment the wrapper cannot accept
  * -p or --model, people stop using it"). Order among passthrough args is preserved.
  */
@@ -75,7 +75,7 @@ export async function prepareRun(cwd: string, client: ClientId, loadoutNameArg: 
 
   const projection =
     client === "claude-code"
-      ? projectClaudeCode(activation, join(await mkdtemp(join(tmpdir(), "plugged-in-run-")), "claude-code"))
+      ? projectClaudeCode(activation, join(await mkdtemp(join(tmpdir(), "pluggedin-run-")), "claude-code"))
       : projectCodex(activation);
 
   return {
@@ -89,7 +89,7 @@ export async function prepareRun(cwd: string, client: ClientId, loadoutNameArg: 
 
 /**
  * Materializes the Projection's generated files (if any — Codex has none) and execs the
- * native Client, replacing plugged-in's own stdio so it behaves as a transparent wrapper.
+ * native Client, replacing pluggedin's own stdio so it behaves as a transparent wrapper.
  * Refuses (throws RefusedToLaunchError) rather than launch with a misrepresented Loadout —
  * callers should run `explain` first if they want to see refusals without spawning anything.
  */
