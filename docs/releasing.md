@@ -14,12 +14,31 @@ The package does not exist on the registry yet, and npm cannot register a truste
 for a package that has never been published. So the first release is manual and every release
 after it is automated.
 
-### 1. First publish, by hand
+### 1. Enable 2FA on the npm account
+
+npm requires two-factor authentication on the account for **all** package publishing. Being
+logged in is not enough; without 2FA the publish is rejected with:
+
+```
+npm error code E403
+npm error 403 Two-factor authentication or granular access token with bypass 2fa enabled
+is required to publish packages.
+```
+
+Enable it at npmjs.com → account **Settings** → **Two-Factor Authentication** (an authenticator
+app is the usual choice). This is a prerequisite for both publishing paths below — a granular
+token with 2FA bypass still requires the account itself to have 2FA turned on.
+
+### 2. First publish, by hand
+
+With 2FA enabled, publish interactively and answer the OTP prompt:
 
 ```bash
 npm login
-npm publish --access public
+npm publish --access public          # prompts for a one-time code
 ```
+
+Or pass the code directly with `npm publish --access public --otp=123456`.
 
 `prepublishOnly` builds and runs the test suite first, so a broken tree can't reach the
 registry. Confirm it landed:
@@ -28,7 +47,10 @@ registry. Confirm it landed:
 npm view pluggedin version
 ```
 
-### 2. Register the trusted publisher
+Only this first publish needs 2FA or a token. Once trusted publishing is configured, the
+workflow authenticates over OIDC, which is exempt from the 2FA requirement.
+
+### 3. Register the trusted publisher
 
 On npmjs.com, go to the package → **Settings** → **Trusted Publisher** → GitHub Actions, and
 enter:
@@ -91,7 +113,11 @@ allows overwriting a published version.
 
 **The tag-check step fails** — the release tag and `package.json` disagree. This usually means
 `npm version` wasn't run, or a tag was created by hand. Fix `package.json`, or delete the tag
-and release and redo step 1.
+and release and redo step 1 of *Cutting a release*.
+
+**`403 ... two-factor authentication ... is required to publish`, publishing by hand** — the
+account doesn't have 2FA enabled. See step 1 of *One-time setup*. Note this affects manual
+publishes only; the workflow's OIDC path is unaffected.
 
 **Trusted publishing errors mentioning the npm version** — OIDC needs npm ≥ 11.5.1. The
 workflow installs `npm@latest` before publishing for exactly this reason; don't drop that step.
