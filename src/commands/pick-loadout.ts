@@ -1,11 +1,10 @@
-import { tmpdir } from "node:os";
+import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 import { buildInventory } from "../inventory/index.js";
 import { loadLoadouts } from "../loadout/store.js";
 import { resolveLoadout } from "../loadout/resolve.js";
 import { isValidLoadoutName, writeNewLoadoutFile } from "../loadout/write.js";
-import { projectClaudeCode } from "../projection/claude-code.js";
-import { projectCodex } from "../projection/codex.js";
+import { projectAll, type ProjectionContext } from "../projection/index.js";
 import type { Prompter } from "../tui/prompter.js";
 import type { Baseline, Component, Inventory, Loadout } from "../domain/types.js";
 
@@ -54,10 +53,19 @@ function describeExistingLoadout(loadout: Loadout, inventory: Inventory, loadout
   const base = `${loadout.name} (${loadout.scope})`;
   try {
     const resolution = resolveLoadout(loadout, inventory, loadoutsByName);
-    const previewWorkDir = join(tmpdir(), "pluggedin", "preview", "claude-code");
-    const refusalCount =
-      projectClaudeCode({ client: "claude-code", inventory, loadout: resolution }, previewWorkDir).refusals.length +
-      projectCodex({ client: "codex", inventory, loadout: resolution }).refusals.length;
+    // Only refusal counts are wanted here, and no Client's refusals depend on the contents
+    // of a config this preview would have to read off disk — so the Grok base config is left
+    // empty rather than making the whole picker async to fetch something unused.
+    const context: ProjectionContext = {
+      workDir: join(tmpdir(), "pluggedin", "preview"),
+      grokHome: join(homedir(), ".grok"),
+      grokBaseConfigToml: "",
+      grokSkillRoots: [],
+    };
+    const refusalCount = Object.values(projectAll(inventory, resolution, context)).reduce(
+      (total, projection) => total + projection.refusals.length,
+      0,
+    );
     if (refusalCount === 0) return base;
     return `${base} — ⚠ ${refusalCount} refusal${refusalCount === 1 ? "" : "s"}, see \`explain\``;
   } catch (err) {
@@ -68,23 +76,32 @@ function describeExistingLoadout(loadout: Loadout, inventory: Inventory, loadout
 /**
  * A short heads-up shown inline in the toggle list, when known statically from the
  * Component itself — no need to simulate Projection per item. A Loadout is shared across
- * both Clients, so none of these ever hide or lock the toggle: a Component that's
- * problematic for one Client can still be freely toggled for the other with the same
- * Loadout, so the choice stays fully in the user's hands — this only informs it.
+ * every Client, so none of these ever hide or lock the toggle: a Component that's
+ * problematic for one Client can still be freely toggled for the others with the same
+ * Loadout, so the choice stays fully in the user's hands — this only informs it. A Component
+ * several Clients see can carry several caveats at once, so they are joined rather than
+ * having the first one win.
  */
 function componentCaveat(component: Component): string | undefined {
-  if (component.id.kind === "skill" && component.annotation !== "annotated") {
-    return "Claude Code: off needs `adopt` first";
+  const caveats: string[] = [];
+  const on = (client: Component["clients"][number]) => component.clients.includes(client);
+
+  // OpenCode's skill caveat — off denies the skill rather than hiding it — is deliberately
+  // not here: it applies to every skill without exception, and repeating it down a list of
+  // fifty rows would drown out the caveats that actually distinguish one row from another.
+  // `explain` states it once, per Client, in its Projection notes.
+  if (component.id.kind === "skill" && component.annotation === "unannotated" && on("claude-code")) {
+    caveats.push("Claude Code: off needs `adopt` first");
+  }
+  if (component.id.kind === "plugin" && on("opencode")) {
+    caveats.push("OpenCode: only turns off if every OpenCode plugin is off");
   }
   if (component.id.kind === "mcp-server") {
-    if (component.clients.includes("codex")) {
-      return "Codex: can't be turned off, stays on regardless";
-    }
-    if (!component.mcp && component.clients.includes("claude-code")) {
-      return "Claude Code: can't be turned on, no launch spec captured";
-    }
+    if (on("codex")) caveats.push("Codex: can't be turned off, stays on regardless");
+    if (on("pi")) caveats.push("Pi: can't be turned off, stays on regardless");
+    if (!component.mcp && on("claude-code")) caveats.push("Claude Code: can't be turned on, no launch spec captured");
   }
-  return undefined;
+  return caveats.length > 0 ? caveats.join("; ") : undefined;
 }
 
 async function promptForNewName(prompter: Prompter, existingNames: readonly string[]): Promise<string> {

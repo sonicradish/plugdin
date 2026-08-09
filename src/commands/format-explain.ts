@@ -1,3 +1,4 @@
+import { CLIENT_IDS, CLIENT_LABELS } from "../projection/index.js";
 import { createPainter, type Painter } from "../util/color.js";
 import type { ExplainResult } from "./explain.js";
 import type { ClientId, Component } from "../domain/types.js";
@@ -33,10 +34,25 @@ function formatClientSection(result: ExplainResult, client: ClientId, label: str
     }
   }
 
-  const projection = result.projections[client === "claude-code" ? "claude-code" : "codex"];
+  const projection = result.projections[client];
   lines.push("");
   lines.push(p.dim("  native launch args:"));
   lines.push(projection.args.length > 0 ? `    ${projection.args.join(" ")}` : p.dim("    (none — native defaults apply)"));
+
+  const envEntries = Object.entries(projection.env);
+  if (envEntries.length > 0) {
+    lines.push("");
+    lines.push(p.dim("  launch environment:"));
+    for (const [name, value] of envEntries) lines.push(`    ${name}=${value}`);
+  }
+
+  if (projection.mirrors.length > 0) {
+    lines.push("");
+    lines.push(p.dim("  ephemeral config home:"));
+    for (const mirror of projection.mirrors) {
+      lines.push(p.dim(`    ${mirror.path} — symlinks to ${mirror.mirrorOf}, except ${mirror.replaced.join(", ")}`));
+    }
+  }
 
   if (projection.generatedFiles.length > 0) {
     lines.push("");
@@ -63,6 +79,12 @@ function formatClientSection(result: ExplainResult, client: ClientId, label: str
     }
   }
 
+  if (projection.notes.length > 0) {
+    lines.push("");
+    lines.push(p.bold(p.yellow("  HOW THIS CLIENT ENFORCES IT:")));
+    for (const note of projection.notes) lines.push(p.yellow(`    ${note}`));
+  }
+
   return lines.join("\n");
 }
 
@@ -81,10 +103,10 @@ export function formatExplain(result: ExplainResult, options: FormatExplainOptio
     for (const w of result.warnings) sections.push(p.yellow(`  ${w.client}/${w.what}: ${w.reason}`));
   }
 
-  sections.push("");
-  sections.push(formatClientSection(result, "claude-code", "Claude Code", p));
-  sections.push("");
-  sections.push(formatClientSection(result, "codex", "Codex", p));
+  for (const client of CLIENT_IDS) {
+    sections.push("");
+    sections.push(formatClientSection(result, client, CLIENT_LABELS[client], p));
+  }
 
   const anyRefusals = Object.values(result.projections).some((proj) => proj.refusals.length > 0);
   if (anyRefusals) {

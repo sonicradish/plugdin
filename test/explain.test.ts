@@ -6,7 +6,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const { runClientCommand } = vi.hoisted(() => ({ runClientCommand: vi.fn() }));
 vi.mock("../src/util/exec.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../src/util/exec.js")>();
-  return { ...actual, runClientCommand };
+  // Both entry points share one implementation: which of the two an adapter uses is an
+  // internal detail (large outputs bypass the pipe), not something a test should have to know.
+  return { ...actual, runClientCommand, runClientCommandToFile: runClientCommand };
 });
 
 const { explain, UnknownLoadoutError } = await import("../src/commands/explain.js");
@@ -24,6 +26,11 @@ describe("explain", () => {
       if (bin === "claude" && args.join(" ") === "plugin list --json") return { available: true, stdout: "[]", stderr: "" };
       if (bin === "codex" && args.join(" ") === "plugin list --json") return { available: true, stdout: JSON.stringify({ installed: [] }), stderr: "" };
       if (bin === "codex" && args.join(" ") === "mcp list --json") return { available: true, stdout: "[]", stderr: "" };
+      if (bin === "grok" && args.join(" ") === "inspect --json") return { available: true, stdout: JSON.stringify({ skills: [], plugins: [] }), stderr: "" };
+      if (bin === "grok" && args.join(" ") === "mcp list --json") return { available: true, stdout: "[]", stderr: "" };
+      if (bin === "opencode" && args.join(" ") === "debug skill") return { available: true, stdout: "[]", stderr: "" };
+      if (bin === "opencode" && args.join(" ") === "debug config") return { available: true, stdout: "{}", stderr: "" };
+      if (bin === "pi" && args.join(" ") === "list") return { available: true, stdout: "", stderr: "" };
       throw new Error(`unexpected command in test: ${bin} ${args.join(" ")}`);
     });
   });

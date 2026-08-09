@@ -10,7 +10,8 @@ A single governable unit of agent extension — a plugin, a skill, or an MCP ser
 _Avoid_: extension, capability, tool
 
 **Client**:
-A coding agent runtime that loads Components, such as Claude Code or Codex.
+A coding agent runtime that loads Components, such as Claude Code, Codex, Grok Build,
+OpenCode, or Pi.
 _Avoid_: agent, host, harness, tool
 
 **Inventory**:

@@ -49,15 +49,20 @@ actually do what I meant," instead of eyeballing the full roster against the TOM
 
 A Component that couldn't be faithfully projected shows up as either `REFUSED` (blocks `run`
 entirely — there's a real fix, usually `adopt`) or `NOTE` (non-blocking — `run` proceeds and
-leaves the Component exactly as the Client's own config already has it; currently only
-"turn an already-configured Codex MCP server off", which has no faithful mechanism at all, so
+leaves the Component exactly as the Client's own config already has it — e.g. "turn an
+already-configured Codex or Pi MCP server off", which has no faithful mechanism at all, so
 blocking forever would help no one).
+
+A third section, `HOW THIS CLIENT ENFORCES IT`, is neither: the decision *was* projected, but
+by a mechanism that differs from "the Component is simply not there". Today that is OpenCode
+turning a skill off through its `skill` permission — the skill cannot run, but its name stays
+in the model's catalog, because OpenCode has no per-skill discovery filter.
 
 ## `pluggedin doctor`
 
 Read-only. Reports:
 
-- **Unannotated skills** — loose skills Claude Code can't filter yet (no `.claude-plugin/plugin.json` beside them). Only matters if you use Claude Code — Codex reads skills natively and needs no Annotation, so this line is safe to ignore on a Codex-only setup.
+- **Unannotated skills** — loose skills Claude Code can't filter yet (no `.claude-plugin/plugin.json` beside them). Only matters if you use Claude Code — every other Client addresses skills natively and needs no Annotation, so this line is safe to ignore if you don't run Claude Code. Skills only another Client can see (Grok's bundled set, OpenCode's built-ins, Pi's own roots) are never listed here: `adopt` would change nothing for them.
 - **Drifted Annotations** — an Annotation pluggedin wrote whose `name` no longer matches the skill's current name (e.g. after a rename, or `npx skills update` touching the skill).
 - **Foreign Annotations** — a `.claude-plugin/plugin.json` that exists but wasn't written by pluggedin. Reported, never modified.
 - **Identity collisions** — the same skill name found under both the global and project skill roots.
@@ -72,12 +77,13 @@ parse (same "print a message, not a stack trace" behavior as `explain`).
 
 ## `pluggedin adopt [--dry-run] [--undo]`
 
-**Only needed if you use Claude Code.** Codex reads skills natively via `-c skills.config=[...]`
-and needs no shim. Claude Code has no native skill filter at all, so a loose skill is *always*
+**Only needed if you use Claude Code.** Every other Client addresses skills natively — Codex
+via `-c skills.config=[...]`, Grok via `[skills] ignore`, Pi via `--skill`, OpenCode via its
+`skill` permission — and needs no shim. Claude Code has no native skill filter at all, so a loose skill is *always*
 visible to it regardless of Annotation — `adopt` only matters the moment a Claude Code Loadout
 tries to turn a specific skill *off*; without an Annotation, Projection has no mechanism to
 honor that and refuses instead (see `explain`'s REFUSED section). If you only run
-`pluggedin run codex`, you can skip this command entirely.
+`pluggedin run codex` (or `grok`, `opencode`, `pi`), you can skip this command entirely.
 
 Writes (or removes) the Annotations `doctor` says are missing, for every discovered skill.
 
@@ -94,29 +100,43 @@ Guarantees:
 
 Exit code: always `0` (it reports skips rather than failing on them).
 
-## `pluggedin run <claude-code|codex> [--loadout NAME] [native args...]`
+## `pluggedin run <claude|codex|grok|opencode|pi> [--loadout NAME] [native args...]`
 
 Resolves a Loadout, computes its Projection, and — if nothing was refused — execs the real
-Client binary (`claude` or `codex`) with the Projection's args prepended to whatever you
-passed after the client name. `--loadout` is the **only** flag this wrapper reserves;
-everything else passes through untouched, in the order you gave it:
+Client binary with the Projection's args prepended to whatever you passed after the client
+name. `--loadout` is the **only** flag this wrapper reserves; everything else passes through
+untouched, in the order you gave it:
 
 ```bash
 pluggedin run codex --loadout dev
 pluggedin run claude-code --loadout dev -p "summarize this repo"
 pluggedin run codex -p "hi" --loadout dev --model gpt-5.5   # --loadout can go anywhere
+pluggedin run grok --loadout dev "fix the bug"
+pluggedin run opencode --loadout dev
+pluggedin run pi --loadout dev
 ```
+
+Accepted client names: `claude` / `claude-code`, `codex`, `grok` / `grok-build`, `opencode`,
+`pi`.
+
+Not every Client is driven by flags. Grok is launched with an ephemeral `GROK_HOME` — a temp
+directory of symlinks back into your real `~/.grok`, with only `config.toml` replaced by a
+generated one — and OpenCode with an inline `OPENCODE_CONFIG_CONTENT`. Your real config is
+never modified in either case, and `explain` prints both before you commit to a launch (see
+ADR-0005). Pi needs neither: its own `--no-skills` / `--skill` flags already say it.
 
 If a Projection has refusals, `run` prints them (same message `explain` would show) and exits
 **without launching anything** — exit code `3`. Exit code `2` means either the first argument
-wasn't `claude-code`/`codex`, or the Loadout itself is unusable (same set of cases as
+wasn't a known client name, or the Loadout itself is unusable (same set of cases as
 `explain`'s exit `2`: doesn't exist, unknown baseline, baseline cycle, an allow/deny
 contradiction, or unparseable TOML) — nothing gets launched in either case. Otherwise the exit
 code is whatever the Client itself exited with.
 
-If a Projection only has *warnings* (currently: an already-configured Codex MCP server that
-can't be faithfully turned off), `run` prints a `Note:` line to stderr for each one and then
-launches anyway — the Component is simply left as the Client's own config already has it.
+If a Projection only has *warnings* (an already-configured Codex or Pi MCP server that can't
+be faithfully turned off, a Grok MCP server defined by a project config layer, or some but not
+all OpenCode plugins turned off), `run` prints a `Note:` line to stderr for each one and then
+launches anyway — the Component is simply left as the Client's own config already has it. Any
+Projection notes print the same way.
 
 ### No `--loadout` given
 

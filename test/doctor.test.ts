@@ -8,7 +8,9 @@ import { projectLoadoutsDir } from "../src/loadout/store.js";
 const { runClientCommand } = vi.hoisted(() => ({ runClientCommand: vi.fn() }));
 vi.mock("../src/util/exec.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../src/util/exec.js")>();
-  return { ...actual, runClientCommand };
+  // Both entry points share one implementation: which of the two an adapter uses is an
+  // internal detail (large outputs bypass the pipe), not something a test should have to know.
+  return { ...actual, runClientCommand, runClientCommandToFile: runClientCommand };
 });
 
 const { doctor } = await import("../src/commands/doctor.js");

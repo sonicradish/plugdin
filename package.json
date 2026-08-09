@@ -1,6 +1,6 @@
 {
   "name": "pluggedin",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Decides which plugins, skills, and MCP servers are active in a coding-agent session, portable across agent clients.",
   "type": "module",
   "license": "MIT",
@@ -16,6 +16,9 @@
     "cli",
     "claude-code",
     "codex",
+    "pi",
+    "opencode",
+    "grok",
     "mcp",
     "plugins",
     "skills"

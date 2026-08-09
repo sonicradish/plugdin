@@ -62,5 +62,5 @@ export function projectCodex(activation: Activation): Projection {
     args.push("-c", `skills.config=[${skillOverrides.join(",")}]`);
   }
 
-  return { client: "codex", args, generatedFiles: [], refusals, warnings };
+  return { client: "codex", args, env: {}, generatedFiles: [], mirrors: [], refusals, warnings, notes: [] };
 }

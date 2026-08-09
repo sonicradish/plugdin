@@ -5,7 +5,7 @@ import { explain } from "./commands/explain.js";
 import { formatDoctor, isClean } from "./commands/format-doctor.js";
 import { formatExplain } from "./commands/format-explain.js";
 import { pickOrCreateLoadout } from "./commands/pick-loadout.js";
-import { execRun, normalizeClientArg, parseRunArgs, prepareRun, RefusedToLaunchError } from "./commands/run.js";
+import { CLIENT_ARG_NAMES, execRun, normalizeClientArg, parseRunArgs, prepareRun, RefusedToLaunchError } from "./commands/run.js";
 import { LoadoutConfigError } from "./domain/errors.js";
 import { EnquirerPrompter } from "./tui/enquirer-prompter.js";
 import { shouldUseColor } from "./util/color.js";
@@ -13,13 +13,13 @@ import { shouldUseColor } from "./util/color.js";
 const USAGE = `pluggedin — decide which plugins, skills, and MCP servers a coding agent session sees
 
 Usage:
-  pluggedin explain [loadout]     Print what a Loadout would produce, for both Clients
+  pluggedin explain [loadout]     Print what a Loadout would produce, for every Client
   pluggedin adopt [--dry-run] [--undo]
                                     Write/remove Claude Code Annotations for loose skills.
-                                    Only needed for Claude Code support — Codex reads skills
-                                    natively and never needs this.
+                                    Only needed for Claude Code support — every other Client
+                                    addresses skills natively and never needs this.
   pluggedin doctor                Report Annotation drift, unannotated skills, collisions
-  pluggedin run <claude|claude-code|codex> [--loadout NAME] [native args...]
+  pluggedin run <claude|codex|grok|opencode|pi> [--loadout NAME] [native args...]
                                     Launch a Client with a Loadout applied. Everything
                                     after the client name except --loadout passes through
                                     to the native binary untouched. If --loadout is omitted
@@ -80,7 +80,7 @@ async function main(argv: readonly string[]): Promise<number> {
     const [clientArg, ...clientRest] = rest;
     const client = clientArg === undefined ? undefined : normalizeClientArg(clientArg);
     if (!client) {
-      console.error(`pluggedin run: first argument must be "claude", "claude-code", or "codex"\n\n${USAGE}`);
+      console.error(`pluggedin run: first argument must be one of ${CLIENT_ARG_NAMES.join(", ")}\n\n${USAGE}`);
       return 2;
     }
     let { loadoutName, passthroughArgs } = parseRunArgs(clientRest);
@@ -111,6 +111,9 @@ async function main(argv: readonly string[]): Promise<number> {
         for (const warning of prepared.projection.warnings) {
           console.error(`  ${warning.component.kind} ${warning.component.key}: ${warning.reason}`);
         }
+      }
+      for (const projectionNote of prepared.projection.notes) {
+        console.error(`Note: ${projectionNote}`);
       }
       return await execRun(prepared);
     } catch (err) {

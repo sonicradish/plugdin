@@ -47,6 +47,11 @@ export async function doctor(cwd: string = process.cwd(), claudeHome: string = j
   const foreignAnnotations: Component[] = [];
 
   for (const skill of skills) {
+    // Annotation is a Claude Code shim (ADR-0003). A skill Claude Code cannot see in the
+    // first place — Grok's bundled set, OpenCode's built-ins, Pi's own roots — is marked
+    // "not-applicable" at discovery, and telling someone to `adopt` it would send them after
+    // a fix that changes nothing.
+    if (skill.annotation === "not-applicable") continue;
     const manifest = await readAnnotation(skill.sourcePath);
     if (!manifest) {
       unannotatedSkills.push(skill);

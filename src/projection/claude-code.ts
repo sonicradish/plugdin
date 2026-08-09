@@ -76,8 +76,11 @@ export function projectClaudeCode(activation: Activation, workDir: string): Proj
   return {
     client: "claude-code",
     args,
+    env: {},
     generatedFiles: [settingsFile, mcpConfigFile],
+    mirrors: [],
     refusals,
     warnings: [],
+    notes: [],
   };
 }

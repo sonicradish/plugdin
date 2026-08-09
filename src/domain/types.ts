@@ -1,7 +1,7 @@
 // Vocabulary source of truth: CONTEXT.md. Do not rename these without updating it.
 
 /** A coding agent runtime that loads Components, such as Claude Code or Codex. */
-export type ClientId = "claude-code" | "codex";
+export type ClientId = "claude-code" | "codex" | "grok" | "opencode" | "pi";
 
 /** The kind of governable unit a Component is. */
 export type ComponentKind = "plugin" | "skill" | "mcp-server";
@@ -27,6 +27,14 @@ export interface Component {
   readonly clients: readonly ClientId[];
   /** Where on disk this Component (or its defining config entry) lives. */
   readonly sourcePath: string;
+  /** Every path a specific Client resolves this Component from, where those differ from
+   * `sourcePath`. Grok reports skills through paths rooted at its own config home, and its
+   * `[skills] ignore` list matches only the exact path Grok itself resolved — so a skill
+   * shared with the other Clients needs Grok's spelling of it kept alongside the shared one.
+   * A list rather than one path because the same skill genuinely arrives by several routes:
+   * `~/.claude/skills/x` and the `~/.agents/skills/x` it symlinks to are one skill reachable
+   * two ways, and turning it off means naming both. */
+  readonly clientPaths?: Readonly<Partial<Record<ClientId, readonly string[]>>>;
   /** Present only for kind: "skill" — its SKILL.md frontmatter description, needed to write
    * a meaningful Annotation manifest (Phase 5). */
   readonly description?: string;
@@ -34,6 +42,10 @@ export interface Component {
   readonly annotation?: SkillAnnotationState;
   /** Present only for kind: "mcp-server". The launch spec, for round-trip Projection. */
   readonly mcp?: McpServerSpec;
+  /** Present only for a Pi package. Pi has no per-package toggle — it re-enables resources
+   * by path on the command line — so the paths a package contributes are captured at
+   * discovery, where its `package.json` is already being read. */
+  readonly piPackage?: PiPackageResources;
   /** Present only for kind: "plugin". The declaring marketplace, if any. */
   readonly marketplace?: string;
 }
@@ -47,6 +59,13 @@ export interface McpServerSpec {
   readonly env: Readonly<Record<string, string>>;
   /** Raw fields this Client's config carries that pluggedin does not model explicitly. */
   readonly raw?: Readonly<Record<string, unknown>>;
+}
+
+/** What a Pi package contributes, resolved to absolute paths from its `package.json` `pi`
+ * field, so Projection can hand each back to Pi as `-e` / `--skill` arguments. */
+export interface PiPackageResources {
+  readonly extensionPaths: readonly string[];
+  readonly skillPaths: readonly string[];
 }
 
 /** The set of Components installed on a machine, discovered across all Clients. */
@@ -100,10 +119,23 @@ export interface Projection {
   readonly client: ClientId;
   /** Argv fragments to append to the native launch command, in order. */
   readonly args: readonly string[];
+  /** Environment overlay for the launched Client process. Some Clients expose no launch
+   * flag for their config at all and read an env var instead (OpenCode's
+   * `OPENCODE_CONFIG_CONTENT`, Grok's `GROK_HOME`) — ADR-0005. Applied over the inherited
+   * environment, never replacing it. */
+  readonly env: Readonly<Record<string, string>>;
   /** Ephemeral files this Projection wrote, for cleanup/inspection. */
   readonly generatedFiles: readonly GeneratedFile[];
+  /** Ephemeral config-home mirrors this Projection needs (Grok only — ADR-0005). */
+  readonly mirrors: readonly GeneratedMirror[];
   /** Components that could not be faithfully projected; launch should refuse if non-empty. */
   readonly refusals: readonly Refusal[];
+  /** Client-level remarks about *how* this Projection enforces a decision, where the
+   * mechanism differs from "the Component is simply not there" — always displayed, never
+   * blocking. Distinct from `warnings`: a note describes a decision that WAS projected
+   * (OpenCode denies a skill at the permission layer, so it cannot run but stays listed in
+   * the model's catalog), where a warning describes one that could not be. */
+  readonly notes: readonly string[];
   /** Components that could not be faithfully projected but launch proceeds anyway, leaving
    * the Component in whatever state the Client's own config already has it — printed as a
    * heads-up, never blocks (ADR-0004). Distinct from `refusals`: a `Refusal` has a fix
@@ -115,6 +147,23 @@ export interface GeneratedFile {
   readonly path: string;
   readonly purpose: string;
   readonly contents: string;
+}
+
+/**
+ * An ephemeral directory filled with symlinks back into a Client's real config home, so a
+ * generated config file can stand in for one entry of that home without the launch losing
+ * the credentials, sessions, and caches living beside it (ADR-0005). Declared here rather
+ * than performed inline so Projection stays free of filesystem I/O and `explain` can print
+ * what a launch *would* build; `materializeProjection` is what actually creates it.
+ */
+export interface GeneratedMirror {
+  /** The ephemeral directory to create and fill with symlinks. */
+  readonly path: string;
+  /** The real config home whose entries are symlinked into `path`. */
+  readonly mirrorOf: string;
+  /** Entry names deliberately NOT symlinked, because a GeneratedFile replaces each. */
+  readonly replaced: readonly string[];
+  readonly purpose: string;
 }
 
 export interface Refusal {

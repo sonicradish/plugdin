@@ -2,8 +2,8 @@ import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { componentsFromMcpServers, readMcpServersFromFile, type McpJsonFile } from "./mcp-json.js";
 import { runClientCommand, tryParseJson } from "../util/exec.js";
-import { mcpServerFingerprint } from "../util/fingerprint.js";
 import type { Component } from "../domain/types.js";
 import type { DiscoveryOutcome } from "./codex.js";
 
@@ -62,34 +62,6 @@ export async function discoverClaudeCodePlugins(): Promise<DiscoveryOutcome> {
   return { components, available: true };
 }
 
-interface McpJsonFile {
-  readonly mcpServers?: Readonly<
-    Record<string, { readonly command?: string; readonly args?: readonly string[]; readonly env?: Readonly<Record<string, string>> }>
-  >;
-}
-
-async function readMcpServersFromFile(path: string): Promise<Component[]> {
-  if (!existsSync(path)) return [];
-  const contents = await readFile(path, "utf8").catch(() => undefined);
-  if (!contents) return [];
-  const parsed = tryParseJson(contents) as McpJsonFile | undefined;
-  if (!parsed?.mcpServers) return [];
-  const components: Component[] = [];
-  for (const [name, spec] of Object.entries(parsed.mcpServers)) {
-    if (!spec.command) continue;
-    const args = spec.args ?? [];
-    const key = mcpServerFingerprint(spec.command, args);
-    components.push({
-      id: { kind: "mcp-server", key },
-      name,
-      clients: ["claude-code"],
-      sourcePath: path,
-      mcp: { command: spec.command, args, env: spec.env ?? {} },
-    });
-  }
-  return components;
-}
-
 /**
  * MCP servers Claude Code will load for a project: the project's own `.mcp.json`, plus
  * whatever is registered per-project in `~/.claude.json` (`projects[cwd].mcpServers`, the
@@ -98,28 +70,14 @@ async function readMcpServersFromFile(path: string): Promise<Component[]> {
  * gap until that spike is run.
  */
 export async function discoverClaudeCodeMcpServers(cwd: string): Promise<DiscoveryOutcome> {
-  const fromProjectFile = await readMcpServersFromFile(join(cwd, ".mcp.json"));
+  const fromProjectFile = await readMcpServersFromFile(join(cwd, ".mcp.json"), "claude-code");
 
   const globalConfigPath = join(homedir(), ".claude.json");
-  const fromUserConfig: Component[] = [];
+  let fromUserConfig: Component[] = [];
   if (existsSync(globalConfigPath)) {
     const contents = await readFile(globalConfigPath, "utf8").catch(() => undefined);
     const parsed = contents ? (tryParseJson(contents) as { projects?: Record<string, McpJsonFile> } | undefined) : undefined;
-    const projectEntry = parsed?.projects?.[cwd];
-    if (projectEntry?.mcpServers) {
-      for (const [name, spec] of Object.entries(projectEntry.mcpServers)) {
-        if (!spec.command) continue;
-        const args = spec.args ?? [];
-        const key = mcpServerFingerprint(spec.command, args);
-        fromUserConfig.push({
-          id: { kind: "mcp-server", key },
-          name,
-          clients: ["claude-code"],
-          sourcePath: globalConfigPath,
-          mcp: { command: spec.command, args, env: spec.env ?? {} },
-        });
-      }
-    }
+    fromUserConfig = componentsFromMcpServers(parsed?.projects?.[cwd]?.mcpServers, "claude-code", globalConfigPath);
   }
 
   const byKey = new Map<string, Component>();

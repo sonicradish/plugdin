@@ -2,6 +2,51 @@
 
 Run against Claude Code and Codex CLI 0.147.0 in this environment on 2026-08-08.
 
+## Adding Grok Build, OpenCode, and Pi — 2026-08-09
+
+Probed live against Grok Build 1.0.0, opencode 1.18.15, Pi (`@earendil-works/pi-coding-agent`),
+and Cursor CLI 2026.08.04. Each Client's Projection mechanism is documented at the top of its
+`src/projection/*.ts`; what follows is only what was *surprising* — the things that cost
+debugging time and would cost it again after a vendor update.
+
+**Client output can be truncated by the pipe, silently.** `opencode debug skill` returns
+143,878 bytes when redirected to a file and exactly ~64KB — one pipe buffer — when piped,
+cut off mid-string so the JSON no longer parses. `maxBuffer` is irrelevant; the child exits
+before the pipe drains. This surfaced as "0 skills discovered", not as an error. Fixed by
+`runClientCommandToFile` (`src/util/exec.ts`), which hands the child a file descriptor
+instead. Any introspection command whose output scales with Inventory size should use it —
+`grok inspect --json` is at 27KB here and would hit the same wall on a bigger machine.
+
+**Two `opencode debug` calls at once lose to "database is locked".** Each invocation boots a
+full OpenCode instance and opens its SQLite database, so OpenCode's pair of discovery calls
+is serialized while every other Client's still runs concurrently.
+
+**Grok deduplicates skills by name *before* reporting them, so ignoring the winner promotes
+the loser.** `grok inspect --json` showed `docx` at `~/.grok/skills/docx`; ignoring that path
+let a *bundled* `docx` — which had never appeared in the Inventory at all — take its place. A
+Loadout allowing 4 skills launched Grok with 9. Turning a skill off therefore means ignoring
+the reported path *and* the same name under every other root Grok scans (see
+`skillIgnorePaths` in `src/projection/grok.ts`). Re-verify this if Grok's dedup changes:
+`explain` a `baseline = "none"` Loadout, launch, and count what `grok inspect --json` reports.
+
+**OpenCode's `plugin` array unions across config layers, except when empty.** Base
+`["a","b"]` + `[]` resolves to `[]`, but base `["a","b"]` + `["a"]` resolves to `["b","a"]` —
+OpenCode accumulates plugin origins whenever a layer names any. So "all plugins off" is
+projectable and "some plugins off" is not, which is why the latter warns (ADR-0004).
+
+**Cursor CLI has no session-level override, so it was left out.** Its `mcp.json` paths are
+hard-coded to `homedir()/.cursor/` and `<projectRoot>/.cursor/` in the bundle;
+`CURSOR_CONFIG_DIR` and `XDG_CONFIG_HOME` were both set live and neither redirected it, and
+there is no skill or plugin toggle at all. Every Loadout decision would have been a warning.
+Worth re-probing when Cursor ships a config-path flag or variable — discovery would be
+straightforward (`.cursor/mcp.json`, plus skills from `.cursor/skills/` and the shared roots
+it already reads); only Projection is blocked.
+
+**Still unverified:** Grok's `[plugins] disabled` list. It is documented in Grok's own README
+and the adapter emits it, but no Grok plugin is installed in this environment to test
+against — the same gap S1 records for Claude Code's plugin list. Install one and confirm
+before trusting a Loadout that turns a Grok plugin off.
+
 ## Resolved this session
 
 **S5 — large Inventory vs. `-c` argument list: does not invalidate the design.**

@@ -1,7 +1,8 @@
 # pluggedin
 
 Decides which plugins, skills, and MCP servers appear to a coding agent in a given session,
-and makes that decision reusable and portable across agent clients (Claude Code, Codex).
+and makes that decision reusable and portable across agent clients (Claude Code, Codex,
+Grok Build, OpenCode, Pi).
 
 Start with [PLAN.md](./PLAN.md) for the build plan and [CONTEXT.md](./CONTEXT.md) for
 vocabulary. Settled architecture is in [docs/adr/](./docs/adr/). [spikes/](./spikes/) has the
@@ -26,7 +27,7 @@ npm run build     # compiles src/ -> dist/, which package.json's bin points at
 pluggedin explain [loadout]                        # read-only: preview a Loadout, no I/O
 pluggedin doctor                                    # read-only: Annotation drift, collisions
 pluggedin adopt [--dry-run] [--undo]                 # only needed for Claude Code support
-pluggedin run <claude-code|codex> [--loadout X] [native args...]
+pluggedin run <claude|codex|grok|opencode|pi> [--loadout X] [native args...]
                                                       # launches with --loadout omitted:
                                                       #   TTY  -> interactive picker/creator
                                                       #   else -> project default, else "all"
@@ -53,15 +54,15 @@ npm run typecheck # tsc, both src/ and test/
 ```
 
 Tests that need real Client behavior mock `runClientCommand` (`src/util/exec.ts`) rather than
-shelling out — the actual shapes of `claude plugin list --json` / `codex plugin list --json`
-etc. were captured live against this machine's real Claude Code / Codex installs and are
+shelling out — the actual shapes of `claude plugin list --json` / `grok inspect --json` /
+`opencode debug skill` etc. were captured live against this machine's real Client installs and are
 documented where each adapter parses them (`src/inventory/*.ts`) and in
 `spikes/FINDINGS.md`.
 
 ## Status
 
 All six phases in PLAN.md have working code and test coverage: Inventory discovery, `explain`,
-the Loadout/Baseline resolution model, Claude Code + Codex Projection, `adopt`/`doctor`, and
+the Loadout/Baseline resolution model, per-Client Projection, `adopt`/`doctor`, and
 `run`. Known gaps, tracked in code comments and `spikes/FINDINGS.md`:
 
 - Claude Code's populated `plugin list --json` shape is inferred, not confirmed (empty-array

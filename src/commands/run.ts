@@ -6,23 +6,40 @@ import { buildInventory } from "../inventory/index.js";
 import { findLoadout, loadLoadouts, resolveDefaultLoadoutName } from "../loadout/store.js";
 import { resolveLoadout } from "../loadout/resolve.js";
 import { materializeProjection } from "../projection/materialize.js";
-import { projectClaudeCode } from "../projection/claude-code.js";
-import { projectCodex } from "../projection/codex.js";
+import { gatherProjectionContext, projectFor } from "../projection/index.js";
 import { UnknownLoadoutError } from "./explain.js";
 import type { Activation, ClientId, Projection } from "../domain/types.js";
 
-const CLIENT_BINARIES: Record<ClientId, string> = { "claude-code": "claude", codex: "codex" };
+const CLIENT_BINARIES: Record<ClientId, string> = {
+  "claude-code": "claude",
+  codex: "codex",
+  grok: "grok",
+  opencode: "opencode",
+  // Cursor's CLI ships as `cursor-agent`, not `cursor`; Pi's is simply `pi`.
+  pi: "pi",
+};
 
 /**
  * CLI-facing spelling of a Client. The canonical identity is "claude-code" (matches its
  * binary's own plugin key format, e.g. `code-review@claude-plugins-official`), but nobody
  * actually types that at a prompt — "claude" is what the binary itself is called, so it's
- * accepted as an alias everywhere a Client name is read from argv.
+ * accepted as an alias everywhere a Client name is read from argv. The same applies to the
+ * other Clients whose product name and binary name differ: "grok-build" for `grok`.
  */
+const CLIENT_ALIASES: Readonly<Record<string, ClientId>> = {
+  "claude-code": "claude-code",
+  claude: "claude-code",
+  codex: "codex",
+  grok: "grok",
+  "grok-build": "grok",
+  opencode: "opencode",
+  pi: "pi",
+};
+
+export const CLIENT_ARG_NAMES: readonly string[] = Object.keys(CLIENT_ALIASES);
+
 export function normalizeClientArg(arg: string): ClientId | undefined {
-  if (arg === "claude-code" || arg === "claude") return "claude-code";
-  if (arg === "codex") return "codex";
-  return undefined;
+  return CLIENT_ALIASES[arg];
 }
 
 export class RefusedToLaunchError extends Error {
@@ -73,10 +90,8 @@ export async function prepareRun(cwd: string, client: ClientId, loadoutNameArg: 
   const resolution = resolveLoadout(loadout, inventory, loadouts);
   const activation: Activation = { client, inventory, loadout: resolution };
 
-  const projection =
-    client === "claude-code"
-      ? projectClaudeCode(activation, join(await mkdtemp(join(tmpdir(), "pluggedin-run-")), "claude-code"))
-      : projectCodex(activation);
+  const context = await gatherProjectionContext(await mkdtemp(join(tmpdir(), "pluggedin-run-")));
+  const projection = projectFor(client, activation, context);
 
   return {
     client,
@@ -88,10 +103,14 @@ export async function prepareRun(cwd: string, client: ClientId, loadoutNameArg: 
 }
 
 /**
- * Materializes the Projection's generated files (if any — Codex has none) and execs the
- * native Client, replacing pluggedin's own stdio so it behaves as a transparent wrapper.
- * Refuses (throws RefusedToLaunchError) rather than launch with a misrepresented Loadout —
- * callers should run `explain` first if they want to see refusals without spawning anything.
+ * Materializes the Projection's ephemeral config (files and config-home mirrors, if any —
+ * Codex and Pi have none) and execs the native Client, replacing pluggedin's own stdio so it
+ * behaves as a transparent wrapper. Refuses (throws RefusedToLaunchError) rather than launch
+ * with a misrepresented Loadout — callers should run `explain` first if they want to see
+ * refusals without spawning anything.
+ *
+ * The Projection's environment overlays the inherited one rather than replacing it: a Client
+ * launched here must still see the user's PATH, terminal, and credentials env.
  */
 export async function execRun(prepared: PreparedRun): Promise<number> {
   if (prepared.projection.refusals.length > 0) {
@@ -100,7 +119,10 @@ export async function execRun(prepared: PreparedRun): Promise<number> {
   await materializeProjection(prepared.projection);
 
   return new Promise((resolve, reject) => {
-    const child = spawn(prepared.binary, prepared.nativeArgs, { stdio: "inherit" });
+    const child = spawn(prepared.binary, prepared.nativeArgs, {
+      stdio: "inherit",
+      env: { ...process.env, ...prepared.projection.env },
+    });
     child.on("error", reject);
     child.on("exit", (code, signal) => resolve(code ?? (signal ? 1 : 0)));
   });

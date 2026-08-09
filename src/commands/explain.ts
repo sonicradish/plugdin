@@ -4,9 +4,8 @@ import { LoadoutConfigError } from "../domain/errors.js";
 import { buildInventory, type DiscoveryWarning } from "../inventory/index.js";
 import { findLoadout, loadLoadouts, resolveDefaultLoadoutName } from "../loadout/store.js";
 import { explicitlySetKeys, resolveLoadout } from "../loadout/resolve.js";
-import { projectClaudeCode } from "../projection/claude-code.js";
-import { projectCodex } from "../projection/codex.js";
-import type { Activation, Inventory, Projection, Resolution } from "../domain/types.js";
+import { gatherProjectionContext, projectAll } from "../projection/index.js";
+import type { ClientId, Inventory, Projection, Resolution } from "../domain/types.js";
 
 export class UnknownLoadoutError extends LoadoutConfigError {
   constructor(name: string) {
@@ -22,10 +21,7 @@ export interface ExplainResult {
   /** Component keys this Loadout (or a Loadout it inherits from) explicitly allow/deny'd —
    * everything else is just the chain's terminal all/none baseline showing through. */
   readonly explicitKeys: ReadonlySet<string>;
-  readonly projections: {
-    readonly "claude-code": Projection;
-    readonly codex: Projection;
-  };
+  readonly projections: Readonly<Record<ClientId, Projection>>;
 }
 
 /**
@@ -45,10 +41,7 @@ export async function explain(cwd: string, loadoutNameArg?: string, claudeHome?:
   if (!loadout) throw new UnknownLoadoutError(loadoutName);
 
   const resolution = resolveLoadout(loadout, inventory, loadouts);
-  const previewWorkDir = join(tmpdir(), "pluggedin", "preview", "claude-code");
-
-  const claudeCodeActivation: Activation = { client: "claude-code", inventory, loadout: resolution };
-  const codexActivation: Activation = { client: "codex", inventory, loadout: resolution };
+  const context = await gatherProjectionContext(join(tmpdir(), "pluggedin", "preview"));
 
   return {
     loadoutName,
@@ -56,9 +49,6 @@ export async function explain(cwd: string, loadoutNameArg?: string, claudeHome?:
     inventory,
     resolution,
     explicitKeys: explicitlySetKeys(loadout, loadouts),
-    projections: {
-      "claude-code": projectClaudeCode(claudeCodeActivation, previewWorkDir),
-      codex: projectCodex(codexActivation),
-    },
+    projections: projectAll(inventory, resolution, context),
   };
 }

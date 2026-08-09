@@ -6,7 +6,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const { runClientCommand } = vi.hoisted(() => ({ runClientCommand: vi.fn() }));
 vi.mock("../src/util/exec.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../src/util/exec.js")>();
-  return { ...actual, runClientCommand };
+  // Both entry points share one implementation: which of the two an adapter uses is an
+  // internal detail (large outputs bypass the pipe), not something a test should have to know.
+  return { ...actual, runClientCommand, runClientCommandToFile: runClientCommand };
 });
 
 const { normalizeClientArg, parseRunArgs, prepareRun, RefusedToLaunchError, execRun } = await import("../src/commands/run.js");
@@ -103,9 +105,12 @@ describe("execRun", () => {
       projection: {
         client: "claude-code" as const,
         args: [],
+        env: {},
         generatedFiles: [],
+        mirrors: [],
         refusals: [{ component: { kind: "skill" as const, key: "x@skills-dir" }, reason: "needs adopt" }],
         warnings: [],
+        notes: [],
       },
       nativeArgs: [],
     };
@@ -120,9 +125,12 @@ describe("execRun", () => {
       projection: {
         client: "codex" as const,
         args: [],
+        env: {},
         generatedFiles: [],
+        mirrors: [],
         refusals: [],
         warnings: [{ component: { kind: "mcp-server" as const, key: "srv-1" }, reason: "no faithful way to disable it" }],
+        notes: [],
       },
       nativeArgs: [],
     };
