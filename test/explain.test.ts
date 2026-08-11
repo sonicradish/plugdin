@@ -11,9 +11,9 @@ vi.mock("../src/util/exec.js", async (importOriginal) => {
   return { ...actual, runClientCommand, runClientCommandToFile: runClientCommand };
 });
 
-const { explain, UnknownLoadoutError } = await import("../src/commands/explain.js");
+const { explain, UnknownProfileError } = await import("../src/commands/explain.js");
 const { formatExplain } = await import("../src/commands/format-explain.js");
-const { projectLoadoutsDir } = await import("../src/loadout/store.js");
+const { projectProfilesDir } = await import("../src/profile/store.js");
 
 describe("explain", () => {
   let cwd: string;
@@ -40,21 +40,21 @@ describe("explain", () => {
     await rm(claudeHome, { recursive: true, force: true });
   });
 
-  it("defaults to the built-in 'all' Loadout when the project declares no default", async () => {
+  it("defaults to the built-in 'all' Profile when the project declares no default", async () => {
     const result = await explain(cwd, undefined, claudeHome);
-    expect(result.loadoutName).toBe("all");
+    expect(result.profileName).toBe("all");
   });
 
-  it("throws UnknownLoadoutError for a name that resolves to nothing", async () => {
-    await expect(explain(cwd, "does-not-exist", claudeHome)).rejects.toThrow(UnknownLoadoutError);
+  it("throws UnknownProfileError for a name that resolves to nothing", async () => {
+    await expect(explain(cwd, "does-not-exist", claudeHome)).rejects.toThrow(UnknownProfileError);
   });
 
-  it("resolves a real skill Component against a project Loadout and turns it off", async () => {
+  it("resolves a real skill Component against a project Profile and turns it off", async () => {
     await mkdir(join(claudeHome, "skills", "tdd"), { recursive: true });
     await writeFile(join(claudeHome, "skills", "tdd", "SKILL.md"), `---\nname: tdd\ndescription: d\n---\n`);
 
-    await mkdir(projectLoadoutsDir(cwd), { recursive: true });
-    await writeFile(join(projectLoadoutsDir(cwd), "minimal.toml"), `baseline = "none"\n`);
+    await mkdir(projectProfilesDir(cwd), { recursive: true });
+    await writeFile(join(projectProfilesDir(cwd), "minimal.toml"), `baseline = "none"\n`);
 
     const result = await explain(cwd, "minimal", claudeHome);
     expect(result.resolution.decisions.get("tdd@skills-dir")).toBe(false);
@@ -73,8 +73,8 @@ describe("explain", () => {
     await mkdir(join(claudeHome, "skills", "grilling"), { recursive: true });
     await writeFile(join(claudeHome, "skills", "grilling", "SKILL.md"), `---\nname: grilling\ndescription: d\n---\n`);
 
-    await mkdir(projectLoadoutsDir(cwd), { recursive: true });
-    await writeFile(join(projectLoadoutsDir(cwd), "minimal.toml"), `baseline = "all"\ndeny = ["tdd@skills-dir"]\n`);
+    await mkdir(projectProfilesDir(cwd), { recursive: true });
+    await writeFile(join(projectProfilesDir(cwd), "minimal.toml"), `baseline = "all"\ndeny = ["tdd@skills-dir"]\n`);
 
     const result = await explain(cwd, "minimal", claudeHome);
     expect(result.explicitKeys.has("tdd@skills-dir")).toBe(true);
@@ -123,8 +123,8 @@ describe("formatExplain", () => {
       await writeFile(join(claudeHome, "skills", "grilling", "SKILL.md"), `---\nname: grilling\ndescription: d\n---\n`);
       runClientCommand.mockImplementation(async () => ({ available: true, stdout: "[]", stderr: "" }));
 
-      await mkdir(projectLoadoutsDir(cwd), { recursive: true });
-      await writeFile(join(projectLoadoutsDir(cwd), "minimal.toml"), `baseline = "all"\ndeny = ["tdd@skills-dir"]\n`);
+      await mkdir(projectProfilesDir(cwd), { recursive: true });
+      await writeFile(join(projectProfilesDir(cwd), "minimal.toml"), `baseline = "all"\ndeny = ["tdd@skills-dir"]\n`);
 
       const result = await explain(cwd, "minimal", claudeHome);
       const text = formatExplain(result);

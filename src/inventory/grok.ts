@@ -104,7 +104,7 @@ interface GrokMcpEntry {
  * is the call that can round-trip a launch spec.
  *
  * Servers already disabled in Grok's own config are still reported (with `enabled: false`);
- * they stay in the Inventory so a Loadout can turn them back *on*, which is a decision this
+ * they stay in the Inventory so a Profile can turn them back *on*, which is a decision this
  * tool's Projection can express.
  */
 export async function discoverGrokMcpServers(): Promise<DiscoveryOutcome> {

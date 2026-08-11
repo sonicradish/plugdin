@@ -26,8 +26,8 @@ function tomlString(value: string): string {
  * is simply left in whatever state Codex's own config already has it (usually on).
  */
 export function projectCodex(activation: Activation): Projection {
-  const { inventory, loadout } = activation;
-  const decisions = loadout.decisions;
+  const { inventory, profile } = activation;
+  const decisions = profile.decisions;
   const args: string[] = [];
   const refusals: Refusal[] = [];
   const warnings: Refusal[] = [];

@@ -8,7 +8,7 @@ import { projectOpenCode } from "./opencode.js";
 import { projectPi } from "./pi.js";
 import type { Activation, ClientId, Inventory, Projection, Resolution } from "../domain/types.js";
 
-/** Every Client plugdin can project a Loadout onto, in display order. */
+/** Every Client plugdin can project a Profile onto, in display order. */
 export const CLIENT_IDS: readonly ClientId[] = ["claude-code", "codex", "grok", "opencode", "pi"];
 
 export const CLIENT_LABELS: Readonly<Record<ClientId, string>> = {
@@ -78,11 +78,11 @@ export function projectFor(client: ClientId, activation: Activation, context: Pr
   }
 }
 
-/** Every Client's Projection of one Resolution, for `explain` and the Loadout picker. */
-export function projectAll(inventory: Inventory, loadout: Resolution, context: ProjectionContext): Record<ClientId, Projection> {
+/** Every Client's Projection of one Resolution, for `explain` and the Profile picker. */
+export function projectAll(inventory: Inventory, profile: Resolution, context: ProjectionContext): Record<ClientId, Projection> {
   const projections = {} as Record<ClientId, Projection>;
   for (const client of CLIENT_IDS) {
-    projections[client] = projectFor(client, { client, inventory, loadout }, context);
+    projections[client] = projectFor(client, { client, inventory, profile }, context);
   }
   return projections;
 }

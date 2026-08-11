@@ -10,8 +10,8 @@ export interface ToggleItem {
 }
 
 /**
- * Everything the interactive Loadout picker/wizard needs from a terminal, abstracted so
- * `pick-loadout.ts` is testable with a scripted fake instead of a real TTY.
+ * Everything the interactive Profile picker/wizard needs from a terminal, abstracted so
+ * `pick-profile.ts` is testable with a scripted fake instead of a real TTY.
  */
 export interface Prompter {
   select(message: string, options: readonly SelectOption[]): Promise<string>;

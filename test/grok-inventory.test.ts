@@ -100,7 +100,7 @@ describe("discoverGrokMcpServers", () => {
     expect(result.components[0]?.id.kind).toBe("mcp-server");
   });
 
-  it("keeps a server Grok has already disabled, so a Loadout can turn it back on", async () => {
+  it("keeps a server Grok has already disabled, so a Profile can turn it back on", async () => {
     runClientCommand.mockResolvedValueOnce({
       available: true,
       stderr: "",

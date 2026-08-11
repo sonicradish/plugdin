@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { FakePrompter } from "./support/fake-prompter.js";
 import { writeAnnotation } from "../src/adopt/annotate.js";
-import { projectLoadoutsDir } from "../src/loadout/store.js";
+import { projectProfilesDir } from "../src/profile/store.js";
 
 const { runClientCommand } = vi.hoisted(() => ({ runClientCommand: vi.fn() }));
 vi.mock("../src/util/exec.js", async (importOriginal) => {
@@ -14,9 +14,9 @@ vi.mock("../src/util/exec.js", async (importOriginal) => {
   return { ...actual, runClientCommand, runClientCommandToFile: runClientCommand };
 });
 
-const { pickOrCreateLoadout } = await import("../src/commands/pick-loadout.js");
+const { pickOrCreateProfile } = await import("../src/commands/pick-profile.js");
 
-describe("pickOrCreateLoadout", () => {
+describe("pickOrCreateProfile", () => {
   let cwd: string;
   let claudeHome: string;
   let plugdinHome: string;
@@ -51,8 +51,8 @@ describe("pickOrCreateLoadout", () => {
 
   it("offers all/none built-ins and Create..., and returns 'all' when chosen", async () => {
     const prompter = new FakePrompter().queueSelect("__plugdin_all__");
-    const result = await pickOrCreateLoadout(cwd, prompter, claudeHome);
-    expect(result).toEqual({ loadoutName: "all", created: false });
+    const result = await pickOrCreateProfile(cwd, prompter, claudeHome);
+    expect(result).toEqual({ profileName: "all", created: false });
     expect(prompter.selectPrompts[0]?.options.map((o) => o.value)).toEqual([
       "__plugdin_all__",
       "__plugdin_none__",
@@ -62,42 +62,42 @@ describe("pickOrCreateLoadout", () => {
 
   it("returns 'none' when chosen", async () => {
     const prompter = new FakePrompter().queueSelect("__plugdin_none__");
-    const result = await pickOrCreateLoadout(cwd, prompter, claudeHome);
-    expect(result).toEqual({ loadoutName: "none", created: false });
+    const result = await pickOrCreateProfile(cwd, prompter, claudeHome);
+    expect(result).toEqual({ profileName: "none", created: false });
   });
 
-  it("lists an existing project Loadout as a pickable option and returns it directly", async () => {
-    await mkdir(projectLoadoutsDir(cwd), { recursive: true });
-    await writeFile(join(projectLoadoutsDir(cwd), "dev.toml"), `baseline = "none"\n`);
+  it("lists an existing project Profile as a pickable option and returns it directly", async () => {
+    await mkdir(projectProfilesDir(cwd), { recursive: true });
+    await writeFile(join(projectProfilesDir(cwd), "dev.toml"), `baseline = "none"\n`);
 
     const prompter = new FakePrompter().queueSelect("dev");
-    const result = await pickOrCreateLoadout(cwd, prompter, claudeHome);
-    expect(result).toEqual({ loadoutName: "dev", created: false });
+    const result = await pickOrCreateProfile(cwd, prompter, claudeHome);
+    expect(result).toEqual({ profileName: "dev", created: false });
     expect(prompter.selectPrompts[0]?.options[0]).toEqual({ value: "dev", label: "dev (project)" });
   });
 
-  it("creates a new project Loadout with baseline none and hand-picked allow list", async () => {
+  it("creates a new project Profile with baseline none and hand-picked allow list", async () => {
     await makeSkill("tdd");
     await makeSkill("grilling");
 
     const prompter = new FakePrompter()
       .queueSelect("__plugdin_create__") // top-level menu
-      .queueInput("my-loadout") // name
+      .queueInput("my-profile") // name
       .queueSelect("project") // scope
       .queueSelect("none") // baseline
       .queueToggleResult(new Set(["tdd@skills-dir"])); // turn tdd on, leave grilling off
 
-    const result = await pickOrCreateLoadout(cwd, prompter, claudeHome);
+    const result = await pickOrCreateProfile(cwd, prompter, claudeHome);
     expect(result.created).toBe(true);
-    expect(result.loadoutName).toBe("my-loadout");
+    expect(result.profileName).toBe("my-profile");
 
-    const contents = await readFile(join(projectLoadoutsDir(cwd), "my-loadout.toml"), "utf8");
+    const contents = await readFile(join(projectProfilesDir(cwd), "my-profile.toml"), "utf8");
     expect(contents).toContain('baseline = "none"');
     expect(contents).toContain("tdd@skills-dir");
     expect(contents).not.toContain("grilling@skills-dir");
   });
 
-  it("creates a Loadout with baseline all, computing deny from what got turned off", async () => {
+  it("creates a Profile with baseline all, computing deny from what got turned off", async () => {
     await makeSkill("tdd");
     await makeSkill("grilling");
 
@@ -108,16 +108,16 @@ describe("pickOrCreateLoadout", () => {
       .queueSelect("all")
       .queueToggleResult(new Set(["tdd@skills-dir"])); // grilling started on (baseline all), now off
 
-    await pickOrCreateLoadout(cwd, prompter, claudeHome);
-    const contents = await readFile(join(projectLoadoutsDir(cwd), "minus-grilling.toml"), "utf8");
+    await pickOrCreateProfile(cwd, prompter, claudeHome);
+    const contents = await readFile(join(projectProfilesDir(cwd), "minus-grilling.toml"), "utf8");
     expect(contents).toContain('baseline = "all"');
     expect(contents).toContain("grilling@skills-dir"); // in deny
     expect(contents).not.toMatch(/allow/); // nothing was turned ON beyond the all baseline
   });
 
   it("re-prompts for a name when the first one is invalid or already taken", async () => {
-    await mkdir(projectLoadoutsDir(cwd), { recursive: true });
-    await writeFile(join(projectLoadoutsDir(cwd), "taken.toml"), `baseline = "all"\n`);
+    await mkdir(projectProfilesDir(cwd), { recursive: true });
+    await writeFile(join(projectProfilesDir(cwd), "taken.toml"), `baseline = "all"\n`);
 
     const prompter = new FakePrompter()
       .queueSelect("__plugdin_create__")
@@ -125,19 +125,19 @@ describe("pickOrCreateLoadout", () => {
       .queueSelect("project")
       .queueSelect("none");
 
-    const result = await pickOrCreateLoadout(cwd, prompter, claudeHome);
-    expect(result.loadoutName).toBe("fresh-name");
+    const result = await pickOrCreateProfile(cwd, prompter, claudeHome);
+    expect(result.profileName).toBe("fresh-name");
     expect(prompter.notes.some((n) => n.includes("Invalid name"))).toBe(true);
     expect(prompter.notes.some((n) => n.includes("already exists"))).toBe(true);
   });
 
-  it("flags an existing Loadout in the menu when it would produce a refusal", async () => {
+  it("flags an existing Profile in the menu when it would produce a refusal", async () => {
     await makeSkill("tdd"); // unannotated — turning it off is a refusal (ADR-0001)
-    await mkdir(projectLoadoutsDir(cwd), { recursive: true });
-    await writeFile(join(projectLoadoutsDir(cwd), "off.toml"), `baseline = "none"\n`);
+    await mkdir(projectProfilesDir(cwd), { recursive: true });
+    await writeFile(join(projectProfilesDir(cwd), "off.toml"), `baseline = "none"\n`);
 
     const prompter = new FakePrompter().queueSelect("__plugdin_none__");
-    await pickOrCreateLoadout(cwd, prompter, claudeHome);
+    await pickOrCreateProfile(cwd, prompter, claudeHome);
     const option = prompter.selectPrompts[0]?.options.find((o) => o.value === "off");
     expect(option?.label).toContain("⚠ 1 refusal");
   });
@@ -146,7 +146,7 @@ describe("pickOrCreateLoadout", () => {
     await makeSkill("tdd");
 
     const prompter = new FakePrompter().queueSelect("__plugdin_create__").queueInput("x").queueSelect("project").queueSelect("none");
-    await pickOrCreateLoadout(cwd, prompter, claudeHome);
+    await pickOrCreateProfile(cwd, prompter, claudeHome);
 
     const item = prompter.toggleListPrompts[0]?.items.find((i) => i.key === "tdd@skills-dir");
     expect(item?.label).toContain("⚠ Claude Code: off needs `adopt` first");
@@ -159,7 +159,7 @@ describe("pickOrCreateLoadout", () => {
     await writeAnnotation(dir, "tdd", "d");
 
     const prompter = new FakePrompter().queueSelect("__plugdin_create__").queueInput("x").queueSelect("project").queueSelect("none");
-    await pickOrCreateLoadout(cwd, prompter, claudeHome);
+    await pickOrCreateProfile(cwd, prompter, claudeHome);
 
     const item = prompter.toggleListPrompts[0]?.items.find((i) => i.key === "tdd@skills-dir");
     expect(item?.label).not.toContain("⚠");
@@ -180,36 +180,36 @@ describe("pickOrCreateLoadout", () => {
     });
 
     const prompter = new FakePrompter().queueSelect("__plugdin_create__").queueInput("x").queueSelect("project").queueSelect("none");
-    await pickOrCreateLoadout(cwd, prompter, claudeHome);
+    await pickOrCreateProfile(cwd, prompter, claudeHome);
 
     const item = prompter.toggleListPrompts[0]?.items.find((i) => i.label.includes("node_repl"));
     expect(item?.label).toContain("⚠ Codex: can't be turned off, stays on regardless");
   });
 
-  it("does not flag an existing Loadout in the menu when it resolves cleanly", async () => {
-    await mkdir(projectLoadoutsDir(cwd), { recursive: true });
-    await writeFile(join(projectLoadoutsDir(cwd), "clean.toml"), `baseline = "none"\n`);
+  it("does not flag an existing Profile in the menu when it resolves cleanly", async () => {
+    await mkdir(projectProfilesDir(cwd), { recursive: true });
+    await writeFile(join(projectProfilesDir(cwd), "clean.toml"), `baseline = "none"\n`);
 
     const prompter = new FakePrompter().queueSelect("__plugdin_none__");
-    await pickOrCreateLoadout(cwd, prompter, claudeHome);
+    await pickOrCreateProfile(cwd, prompter, claudeHome);
     const option = prompter.selectPrompts[0]?.options.find((o) => o.value === "clean");
     expect(option?.label).toBe("clean (project)");
   });
 
-  it("flags an existing Loadout with an invalid config (e.g. a dangling baseline reference) instead of crashing the picker", async () => {
-    await mkdir(projectLoadoutsDir(cwd), { recursive: true });
-    await writeFile(join(projectLoadoutsDir(cwd), "broken.toml"), `baseline = "does-not-exist"\n`);
+  it("flags an existing Profile with an invalid config (e.g. a dangling baseline reference) instead of crashing the picker", async () => {
+    await mkdir(projectProfilesDir(cwd), { recursive: true });
+    await writeFile(join(projectProfilesDir(cwd), "broken.toml"), `baseline = "does-not-exist"\n`);
 
     const prompter = new FakePrompter().queueSelect("__plugdin_none__");
-    const result = await pickOrCreateLoadout(cwd, prompter, claudeHome);
-    expect(result).toEqual({ loadoutName: "none", created: false }); // picking a different option still works
+    const result = await pickOrCreateProfile(cwd, prompter, claudeHome);
+    expect(result).toEqual({ profileName: "none", created: false }); // picking a different option still works
     const option = prompter.selectPrompts[0]?.options.find((o) => o.value === "broken");
     expect(option?.label).toContain("⚠ invalid config");
   });
 
-  it("offers existing Loadouts as baseline choices when creating a new one", async () => {
-    await mkdir(projectLoadoutsDir(cwd), { recursive: true });
-    await writeFile(join(projectLoadoutsDir(cwd), "team-default.toml"), `baseline = "none"\nallow = ["tdd@skills-dir"]\n`);
+  it("offers existing Profiles as baseline choices when creating a new one", async () => {
+    await mkdir(projectProfilesDir(cwd), { recursive: true });
+    await writeFile(join(projectProfilesDir(cwd), "team-default.toml"), `baseline = "none"\nallow = ["tdd@skills-dir"]\n`);
     await makeSkill("tdd");
 
     const prompter = new FakePrompter()
@@ -218,11 +218,11 @@ describe("pickOrCreateLoadout", () => {
       .queueSelect("project")
       .queueSelect("team-default");
 
-    await pickOrCreateLoadout(cwd, prompter, claudeHome);
+    await pickOrCreateProfile(cwd, prompter, claudeHome);
     const baselinePrompt = prompter.selectPrompts.find((p) => p.message === "Baseline");
     expect(baselinePrompt?.options.map((o) => o.value)).toContain("team-default");
 
-    const contents = await readFile(join(projectLoadoutsDir(cwd), "mine.toml"), "utf8");
+    const contents = await readFile(join(projectProfilesDir(cwd), "mine.toml"), "utf8");
     expect(contents).toContain('baseline = "team-default"');
   });
 });

@@ -6,8 +6,8 @@ import type { Activation, Component, Inventory, Resolution } from "../src/domain
 function activation(components: Component[], on: readonly string[]): Activation {
   const inventory: Inventory = { components, discoveredAt: ["claude-code", "codex"] };
   const decisions = new Map(components.map((c) => [c.id.key, on.includes(c.id.key)]));
-  const loadout: Resolution = { loadoutName: "test", decisions };
-  return { client: "claude-code", inventory, loadout };
+  const profile: Resolution = { profileName: "test", decisions };
+  return { client: "claude-code", inventory, profile };
 }
 
 describe("projectClaudeCode", () => {

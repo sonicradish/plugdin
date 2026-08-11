@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { writeAnnotation } from "../src/adopt/annotate.js";
-import { projectLoadoutsDir } from "../src/loadout/store.js";
+import { projectProfilesDir } from "../src/profile/store.js";
 
 const { runClientCommand } = vi.hoisted(() => ({ runClientCommand: vi.fn() }));
 vi.mock("../src/util/exec.js", async (importOriginal) => {
@@ -99,39 +99,39 @@ describe("doctor", () => {
     expect(report.warnings.length).toBeGreaterThan(0);
   });
 
-  it("flags an allow/deny key in a Loadout that matches no discovered Component", async () => {
+  it("flags an allow/deny key in a Profile that matches no discovered Component", async () => {
     await makeSkill(join(claudeHome, "skills"), "tdd");
-    await mkdir(projectLoadoutsDir(cwd), { recursive: true });
+    await mkdir(projectProfilesDir(cwd), { recursive: true });
     await writeFile(
-      join(projectLoadoutsDir(cwd), "typo.toml"),
+      join(projectProfilesDir(cwd), "typo.toml"),
       `baseline = "none"\nallow = ["tdd@skills-dir", "tdd@skils-dir"]\ndeny = ["nonexistent-plugin@some-marketplace"]\n`,
     );
 
     const report = await doctor(cwd, claudeHome);
-    expect(report.unknownLoadoutKeys).toHaveLength(2);
-    expect(report.unknownLoadoutKeys).toContainEqual(
-      expect.objectContaining({ loadoutName: "typo", field: "allow", key: "tdd@skils-dir" }),
+    expect(report.unknownProfileKeys).toHaveLength(2);
+    expect(report.unknownProfileKeys).toContainEqual(
+      expect.objectContaining({ profileName: "typo", field: "allow", key: "tdd@skils-dir" }),
     );
-    expect(report.unknownLoadoutKeys).toContainEqual(
-      expect.objectContaining({ loadoutName: "typo", field: "deny", key: "nonexistent-plugin@some-marketplace" }),
+    expect(report.unknownProfileKeys).toContainEqual(
+      expect.objectContaining({ profileName: "typo", field: "deny", key: "nonexistent-plugin@some-marketplace" }),
     );
   });
 
-  it("does not flag Loadout keys that match a real Component", async () => {
+  it("does not flag Profile keys that match a real Component", async () => {
     await makeSkill(join(claudeHome, "skills"), "tdd");
-    await mkdir(projectLoadoutsDir(cwd), { recursive: true });
-    await writeFile(join(projectLoadoutsDir(cwd), "clean.toml"), `baseline = "none"\nallow = ["tdd@skills-dir"]\n`);
+    await mkdir(projectProfilesDir(cwd), { recursive: true });
+    await writeFile(join(projectProfilesDir(cwd), "clean.toml"), `baseline = "none"\nallow = ["tdd@skills-dir"]\n`);
 
     const report = await doctor(cwd, claudeHome);
-    expect(report.unknownLoadoutKeys).toEqual([]);
+    expect(report.unknownProfileKeys).toEqual([]);
   });
 
-  it("checks every Loadout file, not just one", async () => {
-    await mkdir(projectLoadoutsDir(cwd), { recursive: true });
-    await writeFile(join(projectLoadoutsDir(cwd), "a.toml"), `allow = ["missing-a@x"]\n`);
-    await writeFile(join(projectLoadoutsDir(cwd), "b.toml"), `allow = ["missing-b@x"]\n`);
+  it("checks every Profile file, not just one", async () => {
+    await mkdir(projectProfilesDir(cwd), { recursive: true });
+    await writeFile(join(projectProfilesDir(cwd), "a.toml"), `allow = ["missing-a@x"]\n`);
+    await writeFile(join(projectProfilesDir(cwd), "b.toml"), `allow = ["missing-b@x"]\n`);
 
     const report = await doctor(cwd, claudeHome);
-    expect(report.unknownLoadoutKeys.map((u) => u.key).sort()).toEqual(["missing-a@x", "missing-b@x"]);
+    expect(report.unknownProfileKeys.map((u) => u.key).sort()).toEqual(["missing-a@x", "missing-b@x"]);
   });
 });

@@ -83,7 +83,7 @@ interface OpenCodeConfigJson {
 
 /**
  * `opencode debug config` — "show resolved configuration", i.e. the merged result of the
- * global, project, managed, and env-var layers, which is exactly what a Loadout has to
+ * global, project, managed, and env-var layers, which is exactly what a Profile has to
  * reason about. Confirmed shape 2026-08-09: `{$schema, agent, mode, plugin, command,
  * username, mcp?}` where `mcp` is keyed by server name and each entry is discriminated by
  * `type` — `local` carries `command: string[]` (argv as one array, not command-plus-args)

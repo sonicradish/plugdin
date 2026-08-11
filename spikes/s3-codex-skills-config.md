@@ -1,4 +1,4 @@
-# S3 — does Codex `skills.config` replace or merge with the existing array?
+# S3: does Codex `skills.config` replace or merge with the existing array?
 
 `codex doctor --json` has no skills-visibility field (checked: `config.load` details list
 feature flags and MCP server count, nothing about skills), so this isn't mechanically
@@ -14,10 +14,10 @@ codex exec -c 'skills.config=[{name="<some-visible-skill>",enabled=false}]' \
 ```
 
 If every other previously-visible skill is still present in the second run, `skills.config`
-merges by name rather than replacing the array — Projection (Phase 4) only needs to emit
+merges by name rather than replacing the array, Projection (Phase 4) only needs to emit
 entries for Components actually being turned off, not the full Inventory every launch. If
 skills not mentioned in the override disappear, Projection must always enumerate the
 complete Inventory.
 
 Substitute `<some-visible-skill>` with a real skill name from the first run's output before
-running the second command. Not run automatically — costs a small amount of real API usage.
+running the second command. Not run automatically; it costs a small amount of real API usage.

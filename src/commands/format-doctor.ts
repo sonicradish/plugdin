@@ -26,14 +26,14 @@ export function formatDoctor(report: DoctorReport): string {
   lines.push(`Identity collisions: ${report.collisions.length}`);
   for (const c of report.collisions) lines.push(`  ${c.key} found at multiple paths: ${c.paths.join(", ")}`);
 
-  lines.push(`Loadout keys with no matching Component: ${report.unknownLoadoutKeys.length}`);
-  for (const u of report.unknownLoadoutKeys) {
-    lines.push(`  ${u.loadoutName} (${u.loadoutPath}): "${u.key}" in ${u.field} matches nothing in the current Inventory`);
+  lines.push(`Profile keys with no matching Component: ${report.unknownProfileKeys.length}`);
+  for (const u of report.unknownProfileKeys) {
+    lines.push(`  ${u.profileName} (${u.profilePath}): "${u.key}" in ${u.field} matches nothing in the current Inventory`);
   }
 
   const clean = isClean(report);
   lines.push("");
-  lines.push(clean ? "OK — no drift, no collisions, no dangling Loadout keys." : "Issues found — see above.");
+  lines.push(clean ? "OK — no drift, no collisions, no dangling Profile keys." : "Issues found — see above.");
 
   return lines.join("\n");
 }
@@ -43,6 +43,6 @@ export function isClean(report: DoctorReport): boolean {
     report.unannotatedSkills.length === 0 &&
     report.driftedAnnotations.length === 0 &&
     report.collisions.length === 0 &&
-    report.unknownLoadoutKeys.length === 0
+    report.unknownProfileKeys.length === 0
   );
 }

@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { readAnnotation, isManagedByPlugdin } from "../adopt/annotate.js";
 import { buildInventory, type DiscoveryWarning } from "../inventory/index.js";
 import { discoverLooseSkills } from "../inventory/skills.js";
-import { loadLoadouts } from "../loadout/store.js";
+import { loadProfiles } from "../profile/store.js";
 import type { Component } from "../domain/types.js";
 
 export interface DriftedAnnotation {
@@ -16,9 +16,9 @@ export interface Collision {
   readonly paths: readonly string[];
 }
 
-export interface UnknownLoadoutKey {
-  readonly loadoutName: string;
-  readonly loadoutPath: string;
+export interface UnknownProfileKey {
+  readonly profileName: string;
+  readonly profilePath: string;
   readonly field: "allow" | "deny";
   readonly key: string;
 }
@@ -29,7 +29,7 @@ export interface DoctorReport {
   readonly driftedAnnotations: readonly DriftedAnnotation[];
   readonly foreignAnnotations: readonly Component[];
   readonly collisions: readonly Collision[];
-  readonly unknownLoadoutKeys: readonly UnknownLoadoutKey[];
+  readonly unknownProfileKeys: readonly UnknownProfileKey[];
 }
 
 /**
@@ -79,21 +79,21 @@ export async function doctor(cwd: string = process.cwd(), claudeHome: string = j
     .map(([key, paths]) => ({ key, paths }));
 
   const knownKeys = new Set(inventory.components.map((c) => c.id.key));
-  const loadouts = await loadLoadouts(cwd);
-  const unknownLoadoutKeys: UnknownLoadoutKey[] = [];
-  for (const loadout of loadouts.values()) {
+  const profiles = await loadProfiles(cwd);
+  const unknownProfileKeys: UnknownProfileKey[] = [];
+  for (const profile of profiles.values()) {
     const fields: Array<["allow" | "deny", readonly string[]]> = [
-      ["allow", loadout.allow],
-      ["deny", loadout.deny],
+      ["allow", profile.allow],
+      ["deny", profile.deny],
     ];
     for (const [field, keys] of fields) {
       for (const key of keys) {
         if (!knownKeys.has(key)) {
-          unknownLoadoutKeys.push({ loadoutName: loadout.name, loadoutPath: loadout.definedAt, field, key });
+          unknownProfileKeys.push({ profileName: profile.name, profilePath: profile.definedAt, field, key });
         }
       }
     }
   }
 
-  return { warnings, unannotatedSkills, driftedAnnotations, foreignAnnotations, collisions, unknownLoadoutKeys };
+  return { warnings, unannotatedSkills, driftedAnnotations, foreignAnnotations, collisions, unknownProfileKeys };
 }

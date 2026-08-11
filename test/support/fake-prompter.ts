@@ -1,7 +1,7 @@
 import type { Prompter, SelectOption, ToggleItem } from "../../src/tui/prompter.js";
 
 /**
- * Scripted Prompter for testing the interactive Loadout wizard without a real TTY. Queue
+ * Scripted Prompter for testing the interactive Profile wizard without a real TTY. Queue
  * responses in the exact order the flow under test will ask for them; each call type has
  * its own queue so a wrong-typed response fails loudly instead of silently misinterpreting.
  */

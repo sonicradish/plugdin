@@ -1,58 +1,58 @@
 import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 import { buildInventory } from "../inventory/index.js";
-import { loadLoadouts } from "../loadout/store.js";
-import { resolveLoadout } from "../loadout/resolve.js";
-import { isValidLoadoutName, writeNewLoadoutFile } from "../loadout/write.js";
+import { loadProfiles } from "../profile/store.js";
+import { resolveProfile } from "../profile/resolve.js";
+import { isValidProfileName, writeNewProfileFile } from "../profile/write.js";
 import { projectAll, type ProjectionContext } from "../projection/index.js";
 import type { Prompter } from "../tui/prompter.js";
-import type { Baseline, Component, Inventory, Loadout } from "../domain/types.js";
+import type { Baseline, Component, Inventory, Profile } from "../domain/types.js";
 
 const ALL_OPTION = "__plugdin_all__";
 const NONE_OPTION = "__plugdin_none__";
 const CREATE_OPTION = "__plugdin_create__";
 
-export interface PickLoadoutResult {
-  readonly loadoutName: string;
+export interface PickProfileResult {
+  readonly profileName: string;
   readonly created: boolean;
   readonly path?: string;
 }
 
 /**
- * PLAN.md Phase 6: "TUI picker when no Loadout is named." Lists every known Loadout plus
+ * PLAN.md Phase 6: "TUI picker when no Profile is named." Lists every known Profile plus
  * the two built-in baselines, and offers to create a new one on the spot. Only the picking
  * (and, if chosen, the write to disk) happens here — launching the Client is the caller's
  * job (`run`), so this stays testable without spawning anything.
  */
-export async function pickOrCreateLoadout(cwd: string, prompter: Prompter, claudeHome?: string): Promise<PickLoadoutResult> {
-  const [{ inventory }, loadouts] = await Promise.all([buildInventory(cwd, claudeHome), loadLoadouts(cwd)]);
-  const existingNames = [...loadouts.keys()].sort();
+export async function pickOrCreateProfile(cwd: string, prompter: Prompter, claudeHome?: string): Promise<PickProfileResult> {
+  const [{ inventory }, profiles] = await Promise.all([buildInventory(cwd, claudeHome), loadProfiles(cwd)]);
+  const existingNames = [...profiles.keys()].sort();
 
-  const choice = await prompter.select("No --loadout given. Pick one:", [
-    ...existingNames.map((n) => ({ value: n, label: describeExistingLoadout(loadouts.get(n)!, inventory, loadouts) })),
+  const choice = await prompter.select("No --profile given. Pick one:", [
+    ...existingNames.map((n) => ({ value: n, label: describeExistingProfile(profiles.get(n)!, inventory, profiles) })),
     { value: ALL_OPTION, label: "all — everything on (native default)" },
     { value: NONE_OPTION, label: "none — everything off" },
-    { value: CREATE_OPTION, label: "Create a new Loadout..." },
+    { value: CREATE_OPTION, label: "Create a new Profile..." },
   ]);
 
-  if (choice === ALL_OPTION) return { loadoutName: "all", created: false };
-  if (choice === NONE_OPTION) return { loadoutName: "none", created: false };
-  if (choice !== CREATE_OPTION) return { loadoutName: choice, created: false };
+  if (choice === ALL_OPTION) return { profileName: "all", created: false };
+  if (choice === NONE_OPTION) return { profileName: "none", created: false };
+  if (choice !== CREATE_OPTION) return { profileName: choice, created: false };
 
-  return createLoadoutInteractively(cwd, prompter, inventory, loadouts, existingNames);
+  return createProfileInteractively(cwd, prompter, inventory, profiles, existingNames);
 }
 
 /**
- * `${name} (${scope})`, plus a refusal count so a Loadout that would fail to launch is
+ * `${name} (${scope})`, plus a refusal count so a Profile that would fail to launch is
  * visible in the menu itself instead of only after committing to it (`run` would otherwise
- * show the same refusal wall, but only once you've already picked). A Loadout whose own
+ * show the same refusal wall, but only once you've already picked). A Profile whose own
  * config is broken (unknown baseline, allow/deny contradiction) is flagged rather than
- * thrown from here — a bad *other* Loadout shouldn't crash the picker for everything else.
+ * thrown from here — a bad *other* Profile shouldn't crash the picker for everything else.
  */
-function describeExistingLoadout(loadout: Loadout, inventory: Inventory, loadoutsByName: ReadonlyMap<string, Loadout>): string {
-  const base = `${loadout.name} (${loadout.scope})`;
+function describeExistingProfile(profile: Profile, inventory: Inventory, profilesByName: ReadonlyMap<string, Profile>): string {
+  const base = `${profile.name} (${profile.scope})`;
   try {
-    const resolution = resolveLoadout(loadout, inventory, loadoutsByName);
+    const resolution = resolveProfile(profile, inventory, profilesByName);
     // Only refusal counts are wanted here, and no Client's refusals depend on the contents
     // of a config this preview would have to read off disk — so the Grok base config is left
     // empty rather than making the whole picker async to fetch something unused.
@@ -75,10 +75,10 @@ function describeExistingLoadout(loadout: Loadout, inventory: Inventory, loadout
 
 /**
  * A short heads-up shown inline in the toggle list, when known statically from the
- * Component itself — no need to simulate Projection per item. A Loadout is shared across
+ * Component itself — no need to simulate Projection per item. A Profile is shared across
  * every Client, so none of these ever hide or lock the toggle: a Component that's
  * problematic for one Client can still be freely toggled for the others with the same
- * Loadout, so the choice stays fully in the user's hands — this only informs it. A Component
+ * Profile, so the choice stays fully in the user's hands — this only informs it. A Component
  * several Clients see can carry several caveats at once, so they are joined rather than
  * having the first one win.
  */
@@ -106,31 +106,31 @@ function componentCaveat(component: Component): string | undefined {
 
 async function promptForNewName(prompter: Prompter, existingNames: readonly string[]): Promise<string> {
   for (;;) {
-    const name = await prompter.input("Name for the new Loadout");
-    if (!isValidLoadoutName(name)) {
+    const name = await prompter.input("Name for the new Profile");
+    if (!isValidProfileName(name)) {
       prompter.note(`Invalid name: use letters, numbers, "-", "_", "." only, and not "all"/"none".`);
       continue;
     }
     if (existingNames.includes(name)) {
-      prompter.note(`A Loadout named "${name}" already exists — pick another name.`);
+      prompter.note(`A Profile named "${name}" already exists — pick another name.`);
       continue;
     }
     return name;
   }
 }
 
-async function createLoadoutInteractively(
+async function createProfileInteractively(
   cwd: string,
   prompter: Prompter,
   inventory: Inventory,
-  loadouts: ReadonlyMap<string, Loadout>,
+  profiles: ReadonlyMap<string, Profile>,
   existingNames: readonly string[],
-): Promise<PickLoadoutResult> {
+): Promise<PickProfileResult> {
   const name = await promptForNewName(prompter, existingNames);
 
   const scope = (await prompter.select("Scope", [
-    { value: "project", label: "project — .plugdin/loadouts/ (committed, shared with the team)" },
-    { value: "global", label: "global — ~/.plugdin/loadouts/ (just you, any project)" },
+    { value: "project", label: "project — .plugdin/profiles/ (committed, shared with the team)" },
+    { value: "global", label: "global — ~/.plugdin/profiles/ (just you, any project)" },
   ])) as "project" | "global";
 
   const baselineChoice = await prompter.select("Baseline", [
@@ -143,12 +143,12 @@ async function createLoadoutInteractively(
       ? { kind: "all" }
       : baselineChoice === "none"
         ? { kind: "none" }
-        : { kind: "loadout", name: baselineChoice };
+        : { kind: "profile", name: baselineChoice };
 
-  // A draft Loadout with no allow/deny yet, purely to resolve the baseline's starting state
+  // A draft Profile with no allow/deny yet, purely to resolve the baseline's starting state
   // for the toggle list below — never written to disk.
-  const draft: Loadout = { name, baseline, allow: [], deny: [], scope, definedAt: "<draft>" };
-  const baselineResolution = resolveLoadout(draft, inventory, loadouts);
+  const draft: Profile = { name, baseline, allow: [], deny: [], scope, definedAt: "<draft>" };
+  const baselineResolution = resolveProfile(draft, inventory, profiles);
 
   const items = inventory.components.map((c) => {
     const caveat = componentCaveat(c);
@@ -172,7 +172,7 @@ async function createLoadoutInteractively(
     if (!isOn && item.initiallyOn) deny.push(item.key);
   }
 
-  const path = await writeNewLoadoutFile({ name, scope, baseline, allow, deny }, cwd);
+  const path = await writeNewProfileFile({ name, scope, baseline, allow, deny }, cwd);
   prompter.note(`Wrote ${path}`);
-  return { loadoutName: name, created: true, path };
+  return { profileName: name, created: true, path };
 }

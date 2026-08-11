@@ -4,29 +4,31 @@ import { doctor } from "./commands/doctor.js";
 import { explain } from "./commands/explain.js";
 import { formatDoctor, isClean } from "./commands/format-doctor.js";
 import { formatExplain } from "./commands/format-explain.js";
-import { pickOrCreateLoadout } from "./commands/pick-loadout.js";
-import { CLIENT_ARG_NAMES, execRun, normalizeClientArg, parseRunArgs, prepareRun, RefusedToLaunchError } from "./commands/run.js";
-import { LoadoutConfigError } from "./domain/errors.js";
+import { pickOrCreateProfile } from "./commands/pick-profile.js";
+import { CLIENT_ARG_NAMES, execRun, normalizeClientArg, parseRunArgs, prepareRun, RefusedToLaunchError, RenamedFlagError } from "./commands/run.js";
+import { ProfileConfigError } from "./domain/errors.js";
 import { EnquirerPrompter } from "./tui/enquirer-prompter.js";
 import { shouldUseColor } from "./util/color.js";
 
 const USAGE = `plugdin — decide which plugins, skills, and MCP servers a coding agent session sees
 
-Usage:
-  plugdin explain [loadout]     Print what a Loadout would produce, for every Client
-  plugdin adopt [--dry-run] [--undo]
-                                    Write/remove Claude Code Annotations for loose skills.
-                                    Only needed for Claude Code support — every other Client
-                                    addresses skills natively and never needs this.
-  plugdin doctor                Report Annotation drift, unannotated skills, collisions
-  plugdin run <claude|codex|grok|opencode|pi> [--loadout NAME] [native args...]
-                                    Launch a Client with a Loadout applied. Everything
-                                    after the client name except --loadout passes through
-                                    to the native binary untouched. If --loadout is omitted
-                                    and stdin/stdout are a terminal, prompts you to pick one
-                                    or create a new one; non-interactively, falls back to
-                                    the project's default Loadout, else "all".
-  plugdin --help                Show this message
+Start here:
+  plugdin run claude                    Launch, and pick a Profile from a menu
+  plugdin run claude --profile writing  Launch with a Profile you already have
+
+  Clients: claude (claude-code), codex, grok (grok-build), opencode, pi.
+  Everything after the client name except --profile passes through to the native
+  binary untouched, so your usual flags keep working. With --profile omitted and a
+  terminal attached, you get a picker that can also create a Profile on the spot;
+  non-interactively it falls back to the project's default Profile, else "all".
+
+Also:
+  plugdin explain [profile]             Print what a Profile would produce, for every Client
+  plugdin doctor                        Report Annotation drift, unannotated skills, collisions
+  plugdin adopt [--dry-run] [--undo]    Write/remove Claude Code Annotations for loose skills.
+                                        Only needed for Claude Code — every other Client
+                                        addresses skills natively and never needs this.
+  plugdin --help                        Show this message
 
 "explain" and "doctor" are read-only. "adopt" only ever touches
 .claude-plugin/plugin.json files it manages itself (see --undo).`;
@@ -40,14 +42,14 @@ async function main(argv: readonly string[]): Promise<number> {
   }
 
   if (command === "explain") {
-    const loadoutName = rest[0];
+    const profileName = rest[0];
     try {
-      const result = await explain(process.cwd(), loadoutName);
+      const result = await explain(process.cwd(), profileName);
       console.log(formatExplain(result, { color: shouldUseColor(process.stdout) }));
       const anyRefusals = Object.values(result.projections).some((p) => p.refusals.length > 0);
       return anyRefusals ? 1 : 0;
     } catch (err) {
-      if (err instanceof LoadoutConfigError) {
+      if (err instanceof ProfileConfigError) {
         console.error(err.message);
         return 2;
       }
@@ -68,7 +70,7 @@ async function main(argv: readonly string[]): Promise<number> {
       console.log(formatDoctor(report));
       return isClean(report) ? 0 : 1;
     } catch (err) {
-      if (err instanceof LoadoutConfigError) {
+      if (err instanceof ProfileConfigError) {
         console.error(err.message);
         return 2;
       }
@@ -83,28 +85,28 @@ async function main(argv: readonly string[]): Promise<number> {
       console.error(`plugdin run: first argument must be one of ${CLIENT_ARG_NAMES.join(", ")}\n\n${USAGE}`);
       return 2;
     }
-    let { loadoutName, passthroughArgs } = parseRunArgs(clientRest);
-    const noLoadoutNamed = loadoutName === undefined;
     try {
-      // No --loadout given, and there's a human at the other end of stdin/stdout to ask:
+      let { profileName, passthroughArgs } = parseRunArgs(clientRest);
+      const noProfileNamed = profileName === undefined;
+      // No --profile given, and there's a human at the other end of stdin/stdout to ask:
       // show the picker (PLAN.md Phase 6) instead of silently falling back. A non-interactive
       // caller (scripts, CI) keeps the deterministic project-default-or-"all" fallback in
       // prepareRun, since there's no one there to answer prompts.
-      if (loadoutName === undefined && process.stdin.isTTY && process.stdout.isTTY) {
+      if (profileName === undefined && process.stdin.isTTY && process.stdout.isTTY) {
         const prompter = new EnquirerPrompter();
         try {
-          const picked = await pickOrCreateLoadout(process.cwd(), prompter);
-          loadoutName = picked.loadoutName;
+          const picked = await pickOrCreateProfile(process.cwd(), prompter);
+          profileName = picked.profileName;
         } finally {
           prompter.close();
         }
       }
-      const prepared = await prepareRun(process.cwd(), client, loadoutName, passthroughArgs);
-      // Only the non-interactive fallback (loadoutName still undefined here — the picker
-      // above wasn't shown) is silent otherwise: nothing else prints which Loadout was
+      const prepared = await prepareRun(process.cwd(), client, profileName, passthroughArgs);
+      // Only the non-interactive fallback (profileName still undefined here — the picker
+      // above wasn't shown) is silent otherwise: nothing else prints which Profile was
       // actually used before exec'ing the Client.
-      if (noLoadoutNamed && loadoutName === undefined) {
-        console.error(`plugdin: no --loadout given; using "${prepared.loadoutName}"`);
+      if (noProfileNamed && profileName === undefined) {
+        console.error(`plugdin: no --profile given; using "${prepared.profileName}"`);
       }
       if (prepared.projection.warnings.length > 0) {
         console.error(`Note: ${prepared.projection.warnings.length} Component(s) could not be faithfully projected — launching anyway, left as-is:`);
@@ -117,7 +119,7 @@ async function main(argv: readonly string[]): Promise<number> {
       }
       return await execRun(prepared);
     } catch (err) {
-      if (err instanceof LoadoutConfigError) {
+      if (err instanceof ProfileConfigError || err instanceof RenamedFlagError) {
         console.error(err.message);
         return 2;
       }

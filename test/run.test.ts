@@ -11,8 +11,8 @@ vi.mock("../src/util/exec.js", async (importOriginal) => {
   return { ...actual, runClientCommand, runClientCommandToFile: runClientCommand };
 });
 
-const { normalizeClientArg, parseRunArgs, prepareRun, RefusedToLaunchError, execRun } = await import("../src/commands/run.js");
-const { UnknownLoadoutError } = await import("../src/commands/explain.js");
+const { normalizeClientArg, parseRunArgs, prepareRun, RefusedToLaunchError, RenamedFlagError, execRun } = await import("../src/commands/run.js");
+const { UnknownProfileError } = await import("../src/commands/explain.js");
 
 describe("normalizeClientArg", () => {
   it('accepts "claude" as an alias for "claude-code"', () => {
@@ -35,29 +35,34 @@ describe("normalizeClientArg", () => {
 });
 
 describe("parseRunArgs", () => {
-  it("passes everything through untouched when --loadout is absent", () => {
+  it("passes everything through untouched when --profile is absent", () => {
     expect(parseRunArgs(["-p", "hello", "--model", "sonnet"])).toEqual({
       passthroughArgs: ["-p", "hello", "--model", "sonnet"],
     });
   });
 
-  it("extracts a space-separated --loadout value and removes both tokens", () => {
-    expect(parseRunArgs(["--loadout", "dev", "-p", "hi"])).toEqual({
-      loadoutName: "dev",
+  it("extracts a space-separated --profile value and removes both tokens", () => {
+    expect(parseRunArgs(["--profile", "dev", "-p", "hi"])).toEqual({
+      profileName: "dev",
       passthroughArgs: ["-p", "hi"],
     });
   });
 
-  it("extracts an --loadout=value form", () => {
-    expect(parseRunArgs(["--loadout=dev", "-p", "hi"])).toEqual({
-      loadoutName: "dev",
+  it("rejects the old --loadout name instead of forwarding it to the Client", () => {
+    expect(() => parseRunArgs(["--loadout", "dev"])).toThrow(RenamedFlagError);
+    expect(() => parseRunArgs(["--loadout=dev"])).toThrow(/renamed to --profile/);
+  });
+
+  it("extracts an --profile=value form", () => {
+    expect(parseRunArgs(["--profile=dev", "-p", "hi"])).toEqual({
+      profileName: "dev",
       passthroughArgs: ["-p", "hi"],
     });
   });
 
-  it("preserves passthrough argument order regardless of where --loadout appears", () => {
-    expect(parseRunArgs(["-p", "hi", "--loadout", "dev", "--model", "sonnet"])).toEqual({
-      loadoutName: "dev",
+  it("preserves passthrough argument order regardless of where --profile appears", () => {
+    expect(parseRunArgs(["-p", "hi", "--profile", "dev", "--model", "sonnet"])).toEqual({
+      profileName: "dev",
       passthroughArgs: ["-p", "hi", "--model", "sonnet"],
     });
   });
@@ -79,15 +84,15 @@ describe("prepareRun", () => {
     await rm(cwd, { recursive: true, force: true });
   });
 
-  it("resolves the default Loadout ('all') and passes native args through after Projection args", async () => {
+  it("resolves the default Profile ('all') and passes native args through after Projection args", async () => {
     const prepared = await prepareRun(cwd, "codex", undefined, ["-p", "hello"]);
-    expect(prepared.loadoutName).toBe("all");
+    expect(prepared.profileName).toBe("all");
     expect(prepared.binary).toBe("codex");
     expect(prepared.nativeArgs.slice(-2)).toEqual(["-p", "hello"]);
   });
 
-  it("throws UnknownLoadoutError for a Loadout name that doesn't exist", async () => {
-    await expect(prepareRun(cwd, "codex", "no-such-loadout", [])).rejects.toThrow(UnknownLoadoutError);
+  it("throws UnknownProfileError for a Profile name that doesn't exist", async () => {
+    await expect(prepareRun(cwd, "codex", "no-such-profile", [])).rejects.toThrow(UnknownProfileError);
   });
 
   it("computes claude-code settings/mcp-config file paths under a fresh temp dir", async () => {
@@ -101,7 +106,7 @@ describe("execRun", () => {
     const prepared = {
       client: "claude-code" as const,
       binary: "claude",
-      loadoutName: "all",
+      profileName: "all",
       projection: {
         client: "claude-code" as const,
         args: [],
@@ -121,7 +126,7 @@ describe("execRun", () => {
     const prepared = {
       client: "codex" as const,
       binary: "true", // a real, harmless binary that just exits 0 — proves execRun didn't refuse
-      loadoutName: "all",
+      profileName: "all",
       projection: {
         client: "codex" as const,
         args: [],

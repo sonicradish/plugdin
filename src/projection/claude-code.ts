@@ -16,8 +16,8 @@ interface McpConfigFile {
  * `materializeProjection`), so `explain` can preview it without writing anything.
  */
 export function projectClaudeCode(activation: Activation, workDir: string): Projection {
-  const { inventory, loadout } = activation;
-  const decisions = loadout.decisions;
+  const { inventory, profile } = activation;
+  const decisions = profile.decisions;
 
   const enabledPlugins: Record<string, boolean> = {};
   const mcpServers: McpConfigFile["mcpServers"] = {};

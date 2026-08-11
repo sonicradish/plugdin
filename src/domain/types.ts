@@ -74,43 +74,43 @@ export interface Inventory {
   readonly discoveredAt: readonly ClientId[];
 }
 
-/** The starting point a Loadout is expressed against. */
+/** The starting point a Profile is expressed against. */
 export type Baseline =
   | { readonly kind: "all" }
   | { readonly kind: "none" }
-  | { readonly kind: "loadout"; readonly name: string };
+  | { readonly kind: "profile"; readonly name: string };
 
 /** A named, reusable decision about which Components are active. */
-export interface Loadout {
+export interface Profile {
   readonly name: string;
   readonly baseline: Baseline;
   /** Component keys (ComponentId.key) explicitly turned on over the Baseline. */
   readonly allow: readonly string[];
   /** Component keys explicitly turned off over the Baseline. */
   readonly deny: readonly string[];
-  /** Where this Loadout was defined: user-global or project-scoped. */
+  /** Where this Profile was defined: user-global or project-scoped. */
   readonly scope: "global" | "project";
   readonly definedAt: string;
 }
 
-/** The resolved on/off decision for every Component in an Inventory, under a Loadout. */
+/** The resolved on/off decision for every Component in an Inventory, under a Profile. */
 export interface Resolution {
-  readonly loadoutName: string;
+  readonly profileName: string;
   readonly decisions: ReadonlyMap<string, boolean>;
 }
 
 /** A manifest file added beside an installed skill so a Client that cannot
- * otherwise address that skill can include it in a Loadout. */
+ * otherwise address that skill can include it in a Profile. */
 export interface Annotation {
   readonly skillPath: string;
   readonly pluginJsonPath: string;
   readonly name: string;
 }
 
-/** Applying a Loadout to a single Client session. Bound to the session, not the machine. */
+/** Applying a Profile to a single Client session. Bound to the session, not the machine. */
 export interface Activation {
   readonly client: ClientId;
-  readonly loadout: Resolution;
+  readonly profile: Resolution;
   readonly inventory: Inventory;
 }
 

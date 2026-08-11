@@ -65,7 +65,7 @@ function formatClientSection(result: ExplainResult, client: ClientId, label: str
 
   if (projection.refusals.length > 0) {
     lines.push("");
-    lines.push(p.bold(p.red("  REFUSED — launching with this Loadout would misrepresent what's active:")));
+    lines.push(p.bold(p.red("  REFUSED — launching with this Profile would misrepresent what's active:")));
     for (const refusal of projection.refusals) {
       lines.push(p.red(`    ${refusal.component.kind} ${refusal.component.key}: ${refusal.reason}`));
     }
@@ -95,7 +95,7 @@ export interface FormatExplainOptions {
 export function formatExplain(result: ExplainResult, options: FormatExplainOptions = { color: false }): string {
   const p = createPainter(options.color);
   const sections: string[] = [];
-  sections.push(p.bold(`Loadout: ${result.loadoutName}`));
+  sections.push(p.bold(`Profile: ${result.profileName}`));
 
   if (result.warnings.length > 0) {
     sections.push("");

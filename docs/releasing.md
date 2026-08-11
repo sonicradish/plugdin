@@ -3,10 +3,10 @@
 How a version of plugdin gets from `main` to npm. Two workflows do the work:
 
 
-- **[.github/workflows/ci.yml](../.github/workflows/ci.yml)** — typecheck, test, and build on
+- **[.github/workflows/ci.yml](../.github/workflows/ci.yml)**: typecheck, test, and build on
   every push to `main` and every pull request, against Node 20 and 22 (the range
   `package.json`'s `engines` claims to support).
-- **[.github/workflows/publish.yml](../.github/workflows/publish.yml)** — publishes to npm when
+- **[.github/workflows/publish.yml](../.github/workflows/publish.yml)**: publishes to npm when
   a GitHub Release is published.
 
 ## One-time setup
@@ -27,7 +27,7 @@ is required to publish packages.
 ```
 
 Enable it at npmjs.com → account **Settings** → **Two-Factor Authentication**. npm no longer
-accepts new authenticator-app (TOTP) enrollments, so this will be a passkey or security key —
+accepts new authenticator-app (TOTP) enrollments, so this will be a passkey or security key,
 a 1Password or iCloud passkey, Touch ID, or a hardware key like a YubiKey. It can only be
 registered from a browser.
 
@@ -45,7 +45,7 @@ npm publish --access public
 ```
 
 With a passkey there is no numeric code and no `--otp` flag. Both commands print a URL to
-complete the WebAuthn challenge in a browser, then continue on their own once it succeeds — so
+complete the WebAuthn challenge in a browser, then continue on their own once it succeeds, so
 this has to be run somewhere with a browser available.
 
 `prepublishOnly` builds and runs the test suite first, so a broken tree can't reach the
@@ -70,7 +70,7 @@ enter:
 | Workflow filename | `publish.yml` |
 | Environment | *(leave blank)* |
 
-That's the whole credential story — there is no `NPM_TOKEN` secret in this repo, and nothing
+That's the whole credential story: there is no `NPM_TOKEN` secret in this repo, and nothing
 to rotate. npm mints a short-lived token from the OIDC identity GitHub gives the workflow run,
 and only for runs of that exact workflow file in that exact repository.
 
@@ -82,7 +82,7 @@ match. Same for moving the repo to a different org.
 1. Bump the version and tag it:
 
    ```bash
-   npm version patch     # or minor / major — writes package.json and creates a v0.2.1 tag
+   npm version patch     # or minor / major; writes package.json and creates a v0.2.1 tag
    git push --follow-tags
    ```
 
@@ -97,7 +97,7 @@ match. Same for moving the repo to a different org.
    `package.json`'s version (a mismatch fails the run before anything is published), then runs
    `npm publish --provenance`.
 
-Publishing the Release is the approval gate — pushing the tag alone does nothing. Drafting a
+Publishing the Release is the approval gate: pushing the tag alone does nothing. Drafting a
 release without publishing it doesn't trigger anything either, so you can stage notes freely.
 
 ## Provenance
@@ -112,20 +112,20 @@ npm audit signatures
 
 ## Troubleshooting
 
-**`ENEEDAUTH` or `401` in the publish job** — the trusted publisher entry doesn't match the
+**`ENEEDAUTH` or `401` in the publish job**: the trusted publisher entry doesn't match the
 run. Check the repo owner, repo name, and workflow filename against the table above.
 
-**`403 You cannot publish over the previously published versions`** — the version in
+**`403 You cannot publish over the previously published versions`**: the version in
 `package.json` is already on the registry. Bump it, re-tag, and cut a new release; npm never
 allows overwriting a published version.
 
-**The tag-check step fails** — the release tag and `package.json` disagree. This usually means
+**The tag-check step fails**: the release tag and `package.json` disagree. This usually means
 `npm version` wasn't run, or a tag was created by hand. Fix `package.json`, or delete the tag
 and release and redo step 1 of *Cutting a release*.
 
-**`403 ... two-factor authentication ... is required to publish`, publishing by hand** — the
+**`403 ... two-factor authentication ... is required to publish`, publishing by hand**: the
 account doesn't have 2FA enabled. See step 1 of *One-time setup*. Note this affects manual
 publishes only; the workflow's OIDC path is unaffected.
 
-**Trusted publishing errors mentioning the npm version** — OIDC needs npm ≥ 11.5.1. The
+**Trusted publishing errors mentioning the npm version**: OIDC needs npm ≥ 11.5.1. The
 workflow installs `npm@latest` before publishing for exactly this reason; don't drop that step.

@@ -3,12 +3,12 @@ import { readdir, readFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join, basename } from "node:path";
 import { parse as parseToml } from "smol-toml";
-import { LoadoutConfigError } from "../domain/errors.js";
-import type { Baseline, Loadout } from "../domain/types.js";
+import { ProfileConfigError } from "../domain/errors.js";
+import type { Baseline, Profile } from "../domain/types.js";
 
-export class InvalidLoadoutFileError extends LoadoutConfigError {
+export class InvalidProfileFileError extends ProfileConfigError {
   constructor(path: string, detail: string) {
-    super(`Invalid Loadout file ${path}: ${detail}`);
+    super(`Invalid Profile file ${path}: ${detail}`);
   }
 }
 
@@ -17,36 +17,36 @@ export function plugdinHome(): string {
   return process.env.PLUGDIN_HOME ?? join(homedir(), ".plugdin");
 }
 
-export function globalLoadoutsDir(): string {
-  return join(plugdinHome(), "loadouts");
+export function globalProfilesDir(): string {
+  return join(plugdinHome(), "profiles");
 }
 
-export function projectLoadoutsDir(cwd: string): string {
-  return join(cwd, ".plugdin", "loadouts");
+export function projectProfilesDir(cwd: string): string {
+  return join(cwd, ".plugdin", "profiles");
 }
 
 function parseBaseline(raw: unknown, path: string): Baseline {
   if (raw === undefined || raw === "all") return { kind: "all" };
   if (raw === "none") return { kind: "none" };
-  if (typeof raw === "string") return { kind: "loadout", name: raw };
-  throw new InvalidLoadoutFileError(path, `"baseline" must be "all", "none", or another Loadout's name`);
+  if (typeof raw === "string") return { kind: "profile", name: raw };
+  throw new InvalidProfileFileError(path, `"baseline" must be "all", "none", or another Profile's name`);
 }
 
 function parseStringArray(raw: unknown, field: string, path: string): string[] {
   if (raw === undefined) return [];
   if (!Array.isArray(raw) || !raw.every((v) => typeof v === "string")) {
-    throw new InvalidLoadoutFileError(path, `"${field}" must be an array of strings`);
+    throw new InvalidProfileFileError(path, `"${field}" must be an array of strings`);
   }
   return raw;
 }
 
-async function loadLoadoutFile(path: string, scope: Loadout["scope"]): Promise<Loadout> {
+async function loadProfileFile(path: string, scope: Profile["scope"]): Promise<Profile> {
   const contents = await readFile(path, "utf8");
   let parsed: Record<string, unknown>;
   try {
     parsed = parseToml(contents);
   } catch (err) {
-    throw new InvalidLoadoutFileError(path, (err as Error).message);
+    throw new InvalidProfileFileError(path, (err as Error).message);
   }
   const name = basename(path, ".toml");
   return {
@@ -59,47 +59,47 @@ async function loadLoadoutFile(path: string, scope: Loadout["scope"]): Promise<L
   };
 }
 
-async function loadDir(dir: string, scope: Loadout["scope"]): Promise<Loadout[]> {
+async function loadDir(dir: string, scope: Profile["scope"]): Promise<Profile[]> {
   if (!existsSync(dir)) return [];
   const entries = await readdir(dir, { withFileTypes: true });
-  const loadouts: Loadout[] = [];
+  const profiles: Profile[] = [];
   for (const entry of entries) {
     if (!entry.isFile() || !entry.name.endsWith(".toml")) continue;
-    loadouts.push(await loadLoadoutFile(join(dir, entry.name), scope));
+    profiles.push(await loadProfileFile(join(dir, entry.name), scope));
   }
-  return loadouts;
+  return profiles;
 }
 
 /**
- * Project Loadouts override global ones **by name, never merge** (PLAN.md Phase 2: "merged
+ * Project Profiles override global ones **by name, never merge** (PLAN.md Phase 2: "merged
  * allow/deny sets across scopes cannot be debugged") — a project `.toml` with the same
  * filename as a global one replaces it outright, it does not combine allow/deny lists.
  */
-export async function loadLoadouts(cwd: string): Promise<Map<string, Loadout>> {
+export async function loadProfiles(cwd: string): Promise<Map<string, Profile>> {
   const [global, project] = await Promise.all([
-    loadDir(globalLoadoutsDir(), "global"),
-    loadDir(projectLoadoutsDir(cwd), "project"),
+    loadDir(globalProfilesDir(), "global"),
+    loadDir(projectProfilesDir(cwd), "project"),
   ]);
-  const byName = new Map<string, Loadout>();
+  const byName = new Map<string, Profile>();
   for (const l of global) byName.set(l.name, l);
   for (const l of project) byName.set(l.name, l); // project replaces global entirely, by name
   return byName;
 }
 
 interface ProjectConfig {
-  readonly defaultLoadout?: string;
+  readonly defaultProfile?: string;
 }
 
-/** A project may declare a default Loadout (`.plugdin/config.toml`); it may never force one. */
-export async function readProjectDefaultLoadout(cwd: string): Promise<string | undefined> {
+/** A project may declare a default Profile (`.plugdin/config.toml`); it may never force one. */
+export async function readProjectDefaultProfile(cwd: string): Promise<string | undefined> {
   const path = join(cwd, ".plugdin", "config.toml");
   if (!existsSync(path)) return undefined;
   const contents = await readFile(path, "utf8");
-  const parsed = parseToml(contents) as { default_loadout?: unknown };
-  return typeof parsed.default_loadout === "string" ? parsed.default_loadout : undefined;
+  const parsed = parseToml(contents) as { default_profile?: unknown };
+  return typeof parsed.default_profile === "string" ? parsed.default_profile : undefined;
 }
 
-export const BASELINE_ALL: Loadout = {
+export const BASELINE_ALL: Profile = {
   name: "all",
   baseline: { kind: "all" },
   allow: [],
@@ -108,7 +108,7 @@ export const BASELINE_ALL: Loadout = {
   definedAt: "<built-in>",
 };
 
-export const BASELINE_NONE: Loadout = {
+export const BASELINE_NONE: Profile = {
   name: "none",
   baseline: { kind: "none" },
   allow: [],
@@ -118,17 +118,17 @@ export const BASELINE_NONE: Loadout = {
 };
 
 /**
- * Resolves which Loadout a bare `plugdin run <client>` (no `--loadout`) should use: the
+ * Resolves which Profile a bare `plugdin run <client>` (no `--profile`) should use: the
  * project's declared default if it has one, else the built-in `all` baseline (PLAN.md
  * "Fail closed, but only when asked" — not using plugdin changes nothing, but choosing to
- * use it without naming a Loadout should not silently hide everything either).
+ * use it without naming a Profile should not silently hide everything either).
  */
-export async function resolveDefaultLoadoutName(cwd: string): Promise<string> {
-  return (await readProjectDefaultLoadout(cwd)) ?? "all";
+export async function resolveDefaultProfileName(cwd: string): Promise<string> {
+  return (await readProjectDefaultProfile(cwd)) ?? "all";
 }
 
-/** Looks up a Loadout by name, including the two built-ins that don't need a file on disk. */
-export function findLoadout(name: string, byName: ReadonlyMap<string, Loadout>): Loadout | undefined {
+/** Looks up a Profile by name, including the two built-ins that don't need a file on disk. */
+export function findProfile(name: string, byName: ReadonlyMap<string, Profile>): Profile | undefined {
   if (name === "all") return byName.get("all") ?? BASELINE_ALL;
   if (name === "none") return byName.get("none") ?? BASELINE_NONE;
   return byName.get(name);

@@ -5,7 +5,7 @@ import type { GeneratedMirror, Projection } from "../domain/types.js";
 /**
  * Writes a Projection's mirrors and generated files to disk for real, ahead of `run`
  * actually launching a Client. `explain` never calls this — it only inspects
- * `Projection.generatedFiles` in memory, so previewing a Loadout has zero filesystem side
+ * `Projection.generatedFiles` in memory, so previewing a Profile has zero filesystem side
  * effects (PLAN.md Phase 1).
  *
  * Mirrors are built before files, since a Projection's generated file is normally the one

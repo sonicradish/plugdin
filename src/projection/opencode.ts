@@ -35,8 +35,8 @@ interface OpenCodeConfig {
  * catalog; that difference is reported as a Projection note, not silently.
  */
 export function projectOpenCode(activation: Activation): Projection {
-  const { inventory, loadout } = activation;
-  const decisions = loadout.decisions;
+  const { inventory, profile } = activation;
+  const decisions = profile.decisions;
   const warnings: Refusal[] = [];
   const notes: string[] = [];
 

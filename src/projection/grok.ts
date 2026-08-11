@@ -54,8 +54,8 @@ interface GrokConfig {
  * it off is unreachable from here and warns instead of refusing, per ADR-0004.
  */
 export function projectGrok(activation: Activation, context: GrokProjectionContext): Projection {
-  const { inventory, loadout } = activation;
-  const decisions = loadout.decisions;
+  const { inventory, profile } = activation;
+  const decisions = profile.decisions;
   const warnings: Refusal[] = [];
 
   const mirrorPath = join(context.workDir, "grok-home");
@@ -114,7 +114,7 @@ export function projectGrok(activation: Activation, context: GrokProjectionConte
 
   const configFile: GeneratedFile = {
     path: join(mirrorPath, CONFIG_FILE),
-    purpose: "GROK_HOME/config.toml: the user's own config plus this Loadout's skill, plugin, and MCP overrides",
+    purpose: "GROK_HOME/config.toml: the user's own config plus this Profile's skill, plugin, and MCP overrides",
     contents: stringifyToml(config) + "\n",
   };
   const mirror: GeneratedMirror = {
@@ -152,14 +152,14 @@ function parseBaseConfig(toml: string): GrokConfig {
  * Grok deduplicates skills by name *before* reporting them, so `grok inspect --json` shows
  * only the winner of a collision — and ignoring that winner promotes the copy it was hiding.
  * Observed live 2026-08-09: ignoring `~/.grok/skills/docx` (which `inspect` had reported) let
- * a bundled `docx` that had never appeared in the Inventory take its place, and a Loadout
+ * a bundled `docx` that had never appeared in the Inventory take its place, and a Profile
  * allowing 4 skills launched Grok with 9. So a skill being turned off means ignoring the
  * path Grok reported *and* the same name under every other root Grok scans, whether or not
  * anything is currently there — ignoring a path that does not exist costs nothing.
  *
  * The sweep is skipped when another skill Component of the same name is staying on: there,
  * the collision is the point. Ignoring only the denied Component's own paths is what hands
- * the name to the copy the Loadout kept.
+ * the name to the copy the Profile kept.
  */
 function skillIgnorePaths(
   component: { readonly name: string; readonly sourcePath: string; readonly clientPaths?: { readonly grok?: readonly string[] } },

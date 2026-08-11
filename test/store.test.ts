@@ -2,24 +2,24 @@ import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { LoadoutConfigError } from "../src/domain/errors.js";
+import { ProfileConfigError } from "../src/domain/errors.js";
 import {
-  InvalidLoadoutFileError,
-  findLoadout,
-  globalLoadoutsDir,
-  loadLoadouts,
-  projectLoadoutsDir,
-  readProjectDefaultLoadout,
-  resolveDefaultLoadoutName,
-} from "../src/loadout/store.js";
+  InvalidProfileFileError,
+  findProfile,
+  globalProfilesDir,
+  loadProfiles,
+  projectProfilesDir,
+  readProjectDefaultProfile,
+  resolveDefaultProfileName,
+} from "../src/profile/store.js";
 
-describe("InvalidLoadoutFileError", () => {
-  it("is a LoadoutConfigError, so the CLI's generic catch handles it", () => {
-    expect(new InvalidLoadoutFileError("x.toml", "detail")).toBeInstanceOf(LoadoutConfigError);
+describe("InvalidProfileFileError", () => {
+  it("is a ProfileConfigError, so the CLI's generic catch handles it", () => {
+    expect(new InvalidProfileFileError("x.toml", "detail")).toBeInstanceOf(ProfileConfigError);
   });
 });
 
-describe("loadLoadouts", () => {
+describe("loadProfiles", () => {
   let plugdinHome: string;
   let cwd: string;
   let originalHome: string | undefined;
@@ -38,16 +38,16 @@ describe("loadLoadouts", () => {
     await rm(cwd, { recursive: true, force: true });
   });
 
-  it("returns an empty map when neither scope has any Loadout files", async () => {
-    expect(await loadLoadouts(cwd)).toEqual(new Map());
+  it("returns an empty map when neither scope has any Profile files", async () => {
+    expect(await loadProfiles(cwd)).toEqual(new Map());
   });
 
-  it("loads a global Loadout", async () => {
-    await mkdir(globalLoadoutsDir(), { recursive: true });
-    await writeFile(join(globalLoadoutsDir(), "everyday.toml"), `baseline = "none"\nallow = ["tdd@skills-dir"]\n`);
+  it("loads a global Profile", async () => {
+    await mkdir(globalProfilesDir(), { recursive: true });
+    await writeFile(join(globalProfilesDir(), "everyday.toml"), `baseline = "none"\nallow = ["tdd@skills-dir"]\n`);
 
-    const loadouts = await loadLoadouts(cwd);
-    expect(loadouts.get("everyday")).toMatchObject({
+    const profiles = await loadProfiles(cwd);
+    expect(profiles.get("everyday")).toMatchObject({
       name: "everyday",
       baseline: { kind: "none" },
       allow: ["tdd@skills-dir"],
@@ -55,14 +55,14 @@ describe("loadLoadouts", () => {
     });
   });
 
-  it("a project Loadout of the same name REPLACES the global one entirely, not merges", async () => {
-    await mkdir(globalLoadoutsDir(), { recursive: true });
-    await writeFile(join(globalLoadoutsDir(), "everyday.toml"), `baseline = "none"\nallow = ["global-only@x"]\n`);
-    await mkdir(projectLoadoutsDir(cwd), { recursive: true });
-    await writeFile(join(projectLoadoutsDir(cwd), "everyday.toml"), `baseline = "all"\ndeny = ["project-only@x"]\n`);
+  it("a project Profile of the same name REPLACES the global one entirely, not merges", async () => {
+    await mkdir(globalProfilesDir(), { recursive: true });
+    await writeFile(join(globalProfilesDir(), "everyday.toml"), `baseline = "none"\nallow = ["global-only@x"]\n`);
+    await mkdir(projectProfilesDir(cwd), { recursive: true });
+    await writeFile(join(projectProfilesDir(cwd), "everyday.toml"), `baseline = "all"\ndeny = ["project-only@x"]\n`);
 
-    const loadouts = await loadLoadouts(cwd);
-    const resolved = loadouts.get("everyday");
+    const profiles = await loadProfiles(cwd);
+    const resolved = profiles.get("everyday");
     expect(resolved?.scope).toBe("project");
     expect(resolved?.baseline).toEqual({ kind: "all" });
     expect(resolved?.allow).toEqual([]); // NOT merged with the global file's allow
@@ -70,33 +70,33 @@ describe("loadLoadouts", () => {
   });
 
   it("defaults baseline to all when omitted", async () => {
-    await mkdir(projectLoadoutsDir(cwd), { recursive: true });
-    await writeFile(join(projectLoadoutsDir(cwd), "no-baseline.toml"), `allow = ["x"]\n`);
-    const loadouts = await loadLoadouts(cwd);
-    expect(loadouts.get("no-baseline")?.baseline).toEqual({ kind: "all" });
+    await mkdir(projectProfilesDir(cwd), { recursive: true });
+    await writeFile(join(projectProfilesDir(cwd), "no-baseline.toml"), `allow = ["x"]\n`);
+    const profiles = await loadProfiles(cwd);
+    expect(profiles.get("no-baseline")?.baseline).toEqual({ kind: "all" });
   });
 
-  it("treats a bare string baseline as a reference to another Loadout's name", async () => {
-    await mkdir(projectLoadoutsDir(cwd), { recursive: true });
-    await writeFile(join(projectLoadoutsDir(cwd), "child.toml"), `baseline = "parent"\n`);
-    const loadouts = await loadLoadouts(cwd);
-    expect(loadouts.get("child")?.baseline).toEqual({ kind: "loadout", name: "parent" });
+  it("treats a bare string baseline as a reference to another Profile's name", async () => {
+    await mkdir(projectProfilesDir(cwd), { recursive: true });
+    await writeFile(join(projectProfilesDir(cwd), "child.toml"), `baseline = "parent"\n`);
+    const profiles = await loadProfiles(cwd);
+    expect(profiles.get("child")?.baseline).toEqual({ kind: "profile", name: "parent" });
   });
 
-  it("throws InvalidLoadoutFileError for malformed TOML", async () => {
-    await mkdir(projectLoadoutsDir(cwd), { recursive: true });
-    await writeFile(join(projectLoadoutsDir(cwd), "broken.toml"), `this is not valid toml =====`);
-    await expect(loadLoadouts(cwd)).rejects.toThrow(InvalidLoadoutFileError);
+  it("throws InvalidProfileFileError for malformed TOML", async () => {
+    await mkdir(projectProfilesDir(cwd), { recursive: true });
+    await writeFile(join(projectProfilesDir(cwd), "broken.toml"), `this is not valid toml =====`);
+    await expect(loadProfiles(cwd)).rejects.toThrow(InvalidProfileFileError);
   });
 
-  it("throws InvalidLoadoutFileError when allow is not an array of strings", async () => {
-    await mkdir(projectLoadoutsDir(cwd), { recursive: true });
-    await writeFile(join(projectLoadoutsDir(cwd), "bad-allow.toml"), `allow = "not-an-array"\n`);
-    await expect(loadLoadouts(cwd)).rejects.toThrow(InvalidLoadoutFileError);
+  it("throws InvalidProfileFileError when allow is not an array of strings", async () => {
+    await mkdir(projectProfilesDir(cwd), { recursive: true });
+    await writeFile(join(projectProfilesDir(cwd), "bad-allow.toml"), `allow = "not-an-array"\n`);
+    await expect(loadProfiles(cwd)).rejects.toThrow(InvalidProfileFileError);
   });
 });
 
-describe("readProjectDefaultLoadout / resolveDefaultLoadoutName", () => {
+describe("readProjectDefaultProfile / resolveDefaultProfileName", () => {
   let cwd: string;
 
   beforeEach(async () => {
@@ -108,25 +108,25 @@ describe("readProjectDefaultLoadout / resolveDefaultLoadoutName", () => {
   });
 
   it("returns undefined, and defaults to 'all', when the project declares no default", async () => {
-    expect(await readProjectDefaultLoadout(cwd)).toBeUndefined();
-    expect(await resolveDefaultLoadoutName(cwd)).toBe("all");
+    expect(await readProjectDefaultProfile(cwd)).toBeUndefined();
+    expect(await resolveDefaultProfileName(cwd)).toBe("all");
   });
 
-  it("reads a declared default_loadout from .plugdin/config.toml", async () => {
+  it("reads a declared default_profile from .plugdin/config.toml", async () => {
     await mkdir(join(cwd, ".plugdin"), { recursive: true });
-    await writeFile(join(cwd, ".plugdin", "config.toml"), `default_loadout = "everyday"\n`);
-    expect(await readProjectDefaultLoadout(cwd)).toBe("everyday");
-    expect(await resolveDefaultLoadoutName(cwd)).toBe("everyday");
+    await writeFile(join(cwd, ".plugdin", "config.toml"), `default_profile = "everyday"\n`);
+    expect(await readProjectDefaultProfile(cwd)).toBe("everyday");
+    expect(await resolveDefaultProfileName(cwd)).toBe("everyday");
   });
 });
 
-describe("findLoadout", () => {
-  it("returns built-in all/none Loadouts even when the map is empty", () => {
-    expect(findLoadout("all", new Map())?.baseline).toEqual({ kind: "all" });
-    expect(findLoadout("none", new Map())?.baseline).toEqual({ kind: "none" });
+describe("findProfile", () => {
+  it("returns built-in all/none Profiles even when the map is empty", () => {
+    expect(findProfile("all", new Map())?.baseline).toEqual({ kind: "all" });
+    expect(findProfile("none", new Map())?.baseline).toEqual({ kind: "none" });
   });
 
   it("returns undefined for a name that isn't a built-in and isn't in the map", () => {
-    expect(findLoadout("nope", new Map())).toBeUndefined();
+    expect(findProfile("nope", new Map())).toBeUndefined();
   });
 });

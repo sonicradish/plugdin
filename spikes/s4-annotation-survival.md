@@ -1,8 +1,8 @@
-# S4 — does `npx skills update` preserve or clobber an Annotation?
+# S4: does `npx skills update` preserve or clobber an Annotation?
 
 Needs a skill actually installed and managed by `npx skills` (i.e. it has an update path)
 plus a written Annotation (`.claude-plugin/plugin.json` beside it) to threaten. Neither
-exists yet in this environment — the skills under `~/.claude/skills/` here were not
+exists yet in this environment: the skills under `~/.claude/skills/` here were not
 installed via `npx skills`, and Phase 5 (`adopt`, which writes Annotations) isn't built yet.
 
 Procedure, once both preconditions exist:
@@ -21,5 +21,5 @@ cat ~/.claude/skills/<name>/.claude-plugin/plugin.json   # compare to before-sta
 ```
 
 If clobbered, `plugdin doctor` (Phase 5) must detect this as drift and `adopt` must be
-safe to re-run idempotently — already a stated requirement, so this spike is a
+safe to re-run idempotently, already a stated requirement, so this spike is a
 confirmation, not a design-invalidator either way. Re-run once `adopt` exists.

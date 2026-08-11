@@ -9,5 +9,5 @@ competition with the ecosystem we want to complement.
 ## Consequences
 
 The Inventory is discovered, not owned, so plugdin must tolerate Components appearing and
-disappearing between Activations without its involvement. A Loadout must therefore reference
+disappearing between Activations without its involvement. A Profile must therefore reference
 Components by identity rather than by index into a list we control.

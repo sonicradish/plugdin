@@ -3,11 +3,11 @@ import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { buildInventory } from "../inventory/index.js";
-import { findLoadout, loadLoadouts, resolveDefaultLoadoutName } from "../loadout/store.js";
-import { resolveLoadout } from "../loadout/resolve.js";
+import { findProfile, loadProfiles, resolveDefaultProfileName } from "../profile/store.js";
+import { resolveProfile } from "../profile/resolve.js";
 import { materializeProjection } from "../projection/materialize.js";
 import { gatherProjectionContext, projectFor } from "../projection/index.js";
-import { UnknownLoadoutError } from "./explain.js";
+import { UnknownProfileError } from "./explain.js";
 import type { Activation, ClientId, Projection } from "../domain/types.js";
 
 const CLIENT_BINARIES: Record<ClientId, string> = {
@@ -42,6 +42,12 @@ export function normalizeClientArg(arg: string): ClientId | undefined {
   return CLIENT_ALIASES[arg];
 }
 
+export class RenamedFlagError extends Error {
+  constructor() {
+    super(`--loadout was renamed to --profile, and ~/.plugdin/loadouts/ to ~/.plugdin/profiles/ (rename the directory to keep your existing files)`);
+  }
+}
+
 export class RefusedToLaunchError extends Error {
   constructor(public readonly projection: Projection) {
     super(`Refusing to launch ${projection.client}: ${projection.refusals.length} Component(s) could not be faithfully projected`);
@@ -49,46 +55,53 @@ export class RefusedToLaunchError extends Error {
 }
 
 /**
- * `--loadout` is the only flag plugdin's own CLI reserves; every other token is opaque
+ * `--profile` is the only flag plugdin's own CLI reserves; every other token is opaque
  * passthrough to the native Client (PLAN.md Phase 6: "the moment the wrapper cannot accept
  * -p or --model, people stop using it"). Order among passthrough args is preserved.
+ *
+ * `--loadout` is the sole exception to passthrough. It was this flag's name through v0.3.1
+ * (ADR-0006) and is now rejected rather than forwarded: handing an unknown flag to the Client
+ * gets it reported as the Client's own error, which sends people looking in the wrong place.
  */
-export function parseRunArgs(argv: readonly string[]): { loadoutName?: string; passthroughArgs: string[] } {
+export function parseRunArgs(argv: readonly string[]): { profileName?: string; passthroughArgs: string[] } {
   const passthroughArgs: string[] = [];
-  let loadoutName: string | undefined;
+  let profileName: string | undefined;
   for (let i = 0; i < argv.length; i++) {
     const token = argv[i]!;
-    if (token === "--loadout") {
-      loadoutName = argv[++i];
+    if (token === "--profile") {
+      profileName = argv[++i];
       continue;
     }
-    if (token.startsWith("--loadout=")) {
-      loadoutName = token.slice("--loadout=".length);
+    if (token.startsWith("--profile=")) {
+      profileName = token.slice("--profile=".length);
       continue;
+    }
+    if (token === "--loadout" || token.startsWith("--loadout=")) {
+      throw new RenamedFlagError();
     }
     passthroughArgs.push(token);
   }
-  return loadoutName !== undefined ? { loadoutName, passthroughArgs } : { passthroughArgs };
+  return profileName !== undefined ? { profileName, passthroughArgs } : { passthroughArgs };
 }
 
 export interface PreparedRun {
   readonly client: ClientId;
   readonly binary: string;
-  readonly loadoutName: string;
+  readonly profileName: string;
   readonly projection: Projection;
   readonly nativeArgs: readonly string[];
 }
 
-/** Resolves the Loadout and computes the Projection, but does no I/O beyond discovery reads. */
-export async function prepareRun(cwd: string, client: ClientId, loadoutNameArg: string | undefined, passthroughArgs: readonly string[]): Promise<PreparedRun> {
-  const loadoutName = loadoutNameArg ?? (await resolveDefaultLoadoutName(cwd));
-  const [{ inventory }, loadouts] = await Promise.all([buildInventory(cwd), loadLoadouts(cwd)]);
+/** Resolves the Profile and computes the Projection, but does no I/O beyond discovery reads. */
+export async function prepareRun(cwd: string, client: ClientId, profileNameArg: string | undefined, passthroughArgs: readonly string[]): Promise<PreparedRun> {
+  const profileName = profileNameArg ?? (await resolveDefaultProfileName(cwd));
+  const [{ inventory }, profiles] = await Promise.all([buildInventory(cwd), loadProfiles(cwd)]);
 
-  const loadout = findLoadout(loadoutName, loadouts);
-  if (!loadout) throw new UnknownLoadoutError(loadoutName);
+  const profile = findProfile(profileName, profiles);
+  if (!profile) throw new UnknownProfileError(profileName);
 
-  const resolution = resolveLoadout(loadout, inventory, loadouts);
-  const activation: Activation = { client, inventory, loadout: resolution };
+  const resolution = resolveProfile(profile, inventory, profiles);
+  const activation: Activation = { client, inventory, profile: resolution };
 
   const context = await gatherProjectionContext(await mkdtemp(join(tmpdir(), "plugdin-run-")));
   const projection = projectFor(client, activation, context);
@@ -96,7 +109,7 @@ export async function prepareRun(cwd: string, client: ClientId, loadoutNameArg: 
   return {
     client,
     binary: CLIENT_BINARIES[client],
-    loadoutName,
+    profileName,
     projection,
     nativeArgs: [...projection.args, ...passthroughArgs],
   };
@@ -106,7 +119,7 @@ export async function prepareRun(cwd: string, client: ClientId, loadoutNameArg: 
  * Materializes the Projection's ephemeral config (files and config-home mirrors, if any —
  * Codex and Pi have none) and execs the native Client, replacing plugdin's own stdio so it
  * behaves as a transparent wrapper. Refuses (throws RefusedToLaunchError) rather than launch
- * with a misrepresented Loadout — callers should run `explain` first if they want to see
+ * with a misrepresented Profile — callers should run `explain` first if they want to see
  * refusals without spawning anything.
  *
  * The Projection's environment overlays the inherited one rather than replacing it: a Client

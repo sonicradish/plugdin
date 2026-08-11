@@ -1,4 +1,4 @@
-# S2 — does `--strict-mcp-config` also suppress plugin-provided MCP servers?
+# S2: does `--strict-mcp-config` also suppress plugin-provided MCP servers?
 
 Not automatable mechanically: `claude mcp list` is a separate process from a running
 session and only reports servers from `.mcp.json` / `claude mcp add`, not what a live
@@ -22,6 +22,6 @@ plugin-provided servers too, and Claude Code Projection (Phase 3) must re-emit e
 surviving plugin's MCP servers into `--mcp-config` explicitly rather than relying on
 `enabledPlugins` alone to carry them.
 
-Needs a real installed plugin that declares an MCP server as `<plugin-providing-mcp>` —
+Needs a real installed plugin that declares an MCP server as `<plugin-providing-mcp>`,
 none of the currently-installed Inventory in this environment declares one (checked via
 `claude plugin list --json`, which returned `[]`). Substitute one before running.

@@ -1,4 +1,4 @@
-# Example project Loadout for working on plugdin itself.
+# Example project Profile for working on plugdin itself.
 baseline = "none"
 allow = [
   "tdd@skills-dir",

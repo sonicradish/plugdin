@@ -8,8 +8,8 @@ import type { Activation, ClientId, Component, Inventory, Resolution } from "../
 function activation(client: ClientId, components: Component[], on: readonly string[]): Activation {
   const inventory: Inventory = { components, discoveredAt: [client] };
   const decisions = new Map(components.map((c) => [c.id.key, on.includes(c.id.key)]));
-  const loadout: Resolution = { loadoutName: "test", decisions };
-  return { client, inventory, loadout };
+  const profile: Resolution = { profileName: "test", decisions };
+  return { client, inventory, profile };
 }
 
 const grokContext: GrokProjectionContext = {

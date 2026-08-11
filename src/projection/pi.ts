@@ -3,7 +3,7 @@ import type { Activation, Projection, Refusal } from "../domain/types.js";
 /**
  * Pi Projection: native flags only — no generated files, no environment overlay (ADR-0005).
  *
- * Pi is the one Client here whose CLI already expresses a Loadout directly. `--no-skills`
+ * Pi is the one Client here whose CLI already expresses a Profile directly. `--no-skills`
  * and `--no-extensions` turn off *discovery*, while explicit `--skill <path>` and
  * `-e <path>` arguments still load, so "discovery off + name the survivors" is a literal
  * allowlist. Confirmed in Pi's own resource loader (`dist/core/resource-loader.js`, read
@@ -24,8 +24,8 @@ import type { Activation, Projection, Refusal } from "../domain/types.js";
  * Codex's MCP gap does (ADR-0004).
  */
 export function projectPi(activation: Activation): Projection {
-  const { inventory, loadout } = activation;
-  const decisions = loadout.decisions;
+  const { inventory, profile } = activation;
+  const decisions = profile.decisions;
   const warnings: Refusal[] = [];
 
   const skills = { on: [] as string[], anyOff: false };
