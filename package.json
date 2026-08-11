@@ -1,6 +1,6 @@
 {
   "name": "plugdin",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "Decides which plugins, skills, and MCP servers are active in a coding-agent session, portable across agent clients.",
   "type": "module",
   "license": "MIT",
