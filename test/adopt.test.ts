@@ -51,6 +51,11 @@ describe("annotate", () => {
     expect(existsSync(annotationPath(skillDir))).toBe(true);
   });
 
+  it("refuses to write to a path that isn't a skill directory on disk", async () => {
+    await expect(writeAnnotation("<built-in>", "customize-opencode", "d")).rejects.toThrow(/not a skill directory/);
+    expect(existsSync(join(process.cwd(), "<built-in>"))).toBe(false);
+  });
+
   it("isManagedByPlugdin is false for a foreign manifest and for no manifest", async () => {
     expect(isManagedByPlugdin(undefined)).toBe(false);
     expect(isManagedByPlugdin({ name: "x", description: "y", plugdin: { annotates: "x", tool: "something-else" } })).toBe(false);
@@ -93,6 +98,14 @@ describe("planAdopt + applyAdopt", () => {
     const backward = await planAdopt(components, { undo: true });
     expect(forward.map((a) => a.kind)).toEqual(["skip-foreign-annotation"]);
     expect(backward.map((a) => a.kind)).toEqual(["skip-foreign-annotation"]);
+  });
+
+  it("never plans to Annotate a skill Claude Code can't see (OpenCode's built-ins have no path)", async () => {
+    const builtIn: Component = { ...skillComponent("customize-opencode", "<built-in>"), annotation: "not-applicable" };
+    const forward = await planAdopt([builtIn], { undo: false });
+    const backward = await planAdopt([builtIn], { undo: true });
+    expect(forward).toEqual([]);
+    expect(backward).toEqual([]);
   });
 
   it("applyAdopt actually writes the Annotation for an 'annotate' action", async () => {
